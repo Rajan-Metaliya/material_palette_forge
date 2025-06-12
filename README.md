@@ -6,73 +6,74 @@
 
 ## 🚀 Key Features
 
-### 🌈 Color Customization
-- Define a **Seed Color** to auto-generate a Material 3-like palette.
-- Fine-tune core roles: `primary`, `secondary`, `surface`, `error`, and their container/variant forms.
-- Live preview updates UI elements in real-time.
+### 🌈 Color Customization (Light & Dark Modes)
+- Define a **Seed Color** to auto-generate Material 3-like palettes for both **light** and **dark** themes.
+- Fine-tune all core and extended color roles for both modes (`primary`, `secondary`, `surface`, `error`, etc.).
 
-<!-- 📸 IMAGE SUGGESTION: Insert screenshot showing color palette generation and seed color input. -->
+<!-- 📸 IMAGE SUGGESTION: Screenshot showing color palette generation with light/dark toggle. -->
 
-### 🔤 Font Customization
+### 🔤 Font Customization (with Light & Dark Text Colors)
 - Full control over Material Text Styles:
   - Display, Headline, Title, Body, Label (Large/Medium/Small).
-- Add and configure custom text styles:
-  - Font Family, Size, Weight, Letter Spacing, Line Height.
+- Add and configure **custom text styles** with:
+  - Font Family, Size, Weight, Letter Spacing, Line Height
+  - Specific **text color** for both light and dark modes
 
-<!-- 📸 IMAGE SUGGESTION: Inline font editor with live preview showing how changing font family/size affects UI. -->
+<!-- 📸 IMAGE SUGGESTION: Font style editor showing light/dark preview side-by-side. -->
 
 ### ⚙️ Property Customization
 Define named tokens for extended design values:
 - **Spacing**: `small`, `medium`, `containerPadding`
-- **Border Radius**: `cardRadius`, `buttonRadius`
-- **Border Width**, **Opacity**, **Elevation (box shadows)**, **Gradients**
+- **Border Radius**, **Border Width**, **Opacity**, **Elevation (box shadows)**, **Gradients**
 
-All these tokens are converted into **Flutter `ThemeExtension` classes**.
+All tokens are converted into Flutter **ThemeExtension** classes with support for dual-mode theming.
 
-<!-- 📸 IMAGE SUGGESTION: Screenshot showing custom property list and gradient configuration. -->
+<!-- 📸 IMAGE SUGGESTION: Property customization panel showing both modes. -->
 
-### 🧪 Live Preview
-- Persistent side panel mimicking a **Plant Care App UI**.
-- Reflects all color, font, and property changes live.
-- Inline mini previews next to input fields for instant feedback.
+### 🌓 Dark & Light Mode Support
+- Toggle between **light** and **dark mode** in the builder via the header icon.
+- App Preview reflects theme changes in real-time for the selected mode.
+- Generated output includes mode-specific data for Flutter, JSON, and Figma Tokens.
 
-<!-- 📸 IMAGE SUGGESTION: Full app preview UI panel with split-screen showing before/after theme effects. -->
+### 🧪 Live Preview (Mode-Aware)
+- Persistent preview panel mimicking a **Plant Care App UI**.
+- Reflects changes in both light and dark modes.
+- Inline mini previews next to each field respect the active theme.
+
+<!-- 📸 IMAGE SUGGESTION: Full app preview toggling between light and dark modes. -->
 
 ### 📦 Code & Token Generation
-Generate theme outputs in various formats:
+Generate theme outputs in various formats with full **dual-mode support**:
 
 #### 🔹 Flutter
 - `app_theme.dart` includes:
-  - `ColorScheme`
-  - `TextTheme`
-  - `ThemeExtensions` for:
-    - `AppSpacing`
-    - `AppBorderRadius`
-    - `AppBorderWidth`
-    - `AppOpacity`
-    - `AppElevation`
-    - `AppGradients`
-    - `AppTextStyles` (custom fonts)
+  - `ColorScheme` for **lightTheme** and **darkTheme**
+  - `TextTheme` with support for custom light/dark text colors
+  - ThemeExtensions for:
+    - `AppSpacing`, `AppBorderRadius`, `AppBorderWidth`, `AppOpacity`, `AppElevation`, `AppGradients`, `AppTextStyles`
 
 #### 🔹 JSON
-- Complete representation of the full theme config.
+- Includes `{ light: { ... }, dark: { ... } }` structure for all tokens.
 
 #### 🔹 Figma Tokens
-- Compatible with the Figma Tokens plugin.
+- Generates Figma-compatible design tokens for both themes.
 
 ---
 
 ## 🧭 How to Use
 
-1. **Navigate Tabs**: Use the left panel (`Colors`, `Fonts`, `Properties`) to explore and customize.
-2. **Pick Seed Color**: In the `Colors` tab, define a seed color to generate a base palette.
-3. **Customize Your Theme**:
-   - Colors: Adjust individual color roles.
-   - Fonts: Modify existing or add new text styles.
-   - Properties: Add custom tokens for spacing, borders, etc.
-4. **Observe Changes**: Watch live preview on the right and inline previews beside fields.
-5. **Reset Anytime**: Use "Reset to Defaults" if you want to start fresh.
-6. **Export Your Theme**: Choose from Flutter, JSON, or Figma Tokens output.
+1. **Toggle Theme Mode**: Use the 🌞/🌙 icon in the header to switch themes.
+2. **Navigate Sections**: Use the tabs on the left (`Colors`, `Fonts`, `Properties`).
+3. **Seed Color**: In "Colors," define your seed to generate both palettes.
+4. **Customize**:
+   - Edit light and dark values for color roles.
+   - In "Fonts," set font and color values for both modes.
+   - In "Properties," manage token definitions.
+5. **Observe Preview**:
+   - "App Preview" and inline previews update per active theme.
+6. **Reset (Optional)**: Reset to default theme values.
+7. **Export Output**:
+   - Use "Generated Output" section for code in Flutter, JSON, or Figma formats.
 
 ---
 
@@ -80,45 +81,47 @@ Generate theme outputs in various formats:
 
 - **Next.js** (React framework)
 - **TailwindCSS**
-- **Custom Token Logic**
-- **Dynamic Code Generator (Flutter, JSON, Figma)**
+- **Dynamic Flutter Code Generator**
+- **Design Token Engine**
 
 ---
 
-## 📈 Improvements from Collaboration
+## 📈 Recent Enhancements
 
-Here’s a summary of major updates done collaboratively:
-
-- ✅ Seed Color → Auto Material Palette
-- ✅ Detailed ThemeExtensions for spacing, gradients, etc.
-- ✅ Inline visual previews
-- ✅ Sticky real-time UI preview panel
-- ✅ Input validation on properties
-- ✅ Bug fixes for parsing/stray characters
-- ✅ Overhauled font and text style system
+- ✅ Dual palette generation via seed color (light & dark)
+- ✅ Fully themeable app builder with live toggle
+- ✅ Inline previews and sticky UI
+- ✅ Custom properties with ThemeExtension support
+- ✅ Per-style font colors for both modes
+- ✅ Live preview panel & inline visuals
+- ✅ Flutter: lightTheme & darkTheme generation
+- ✅ JSON & Figma Tokens with mode distinction
+- ✅ Input validations for fields and colors
+- ✅ Bug fixes for code parsing
 
 ---
 
 ## 📥 Future Enhancements
 
-- Import/export from real Figma files via plugin.
-- Collaborative design tokens with versioning.
-- Web-to-Flutter auto theming bridge.
+- Import/export from real Figma files
+- Collaborative token editing
+- Flutter integration from shared JSON
 
 ---
 
 ## 📸 Suggested Screenshots
-> Upload these to enhance your README:
-- Color palette generator UI
-- Font customization with inline preview
-- App Preview Panel (Plant Care app sample)
-- Code generation screen for Flutter & JSON
+> Add visuals to boost clarity:
+- Seed color and dual palette UI
+- Font customization with mode toggle
+- Property editor
+- Dual-mode app preview
+- Code generation view
 
 ---
 
 ## 👏 Contributing
 
-This is an internal tool, but feel free to fork or contribute if you're working on similar design-dev bridges. Contributions are welcome via PRs and issues.
+While this is primarily an internal tool, contributions are welcome for similar workflows. Feel free to fork and PR improvements.
 
 ---
 
