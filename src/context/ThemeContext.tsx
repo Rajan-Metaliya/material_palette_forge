@@ -1,3 +1,4 @@
+
 // src/context/ThemeContext.tsx
 "use client";
 
@@ -14,13 +15,16 @@ import type {
   ThemeBorderWidth,
   ThemeOpacity,
   ThemeElevation,
-  CustomPropertyItem,
+  CustomStringPropertyItem, // Changed from CustomPropertyItem
   CustomNumericPropertyItem
 } from '@/types/theme';
 import { INITIAL_THEME_CONFIG } from '@/lib/consts';
 import { generateMaterialColorsFromSeed } from '@/lib/colorUtils';
 
+// Adjusted to handle both string and numeric custom properties
 type PropertyGroupKey = keyof Pick<ThemeProperties, 'spacing' | 'borderRadius' | 'borderWidth' | 'opacity' | 'elevation'>;
+type AnyCustomPropertyItem = CustomStringPropertyItem | CustomNumericPropertyItem;
+
 
 interface ThemeContextType {
   themeConfig: ThemeConfiguration;
@@ -31,11 +35,11 @@ interface ThemeContextType {
   updatePropertyListItem: (
     groupKey: PropertyGroupKey,
     itemIndex: number,
-    newItemData: CustomPropertyItem | CustomNumericPropertyItem
+    newItemData: AnyCustomPropertyItem // Uses the union type
   ) => void;
   addPropertyListItem: (
     groupKey: PropertyGroupKey,
-    newItemData: CustomPropertyItem | CustomNumericPropertyItem
+    newItemData: AnyCustomPropertyItem // Uses the union type
   ) => void;
   removePropertyListItem: (
     groupKey: PropertyGroupKey,
@@ -107,10 +111,10 @@ export const ThemeProvider = ({ children }: { children: ReactNode }) => {
     (
       groupKey: PropertyGroupKey,
       itemIndex: number,
-      newItemData: CustomPropertyItem | CustomNumericPropertyItem
+      newItemData: AnyCustomPropertyItem
     ) => {
       updateThemeConfigState(prevConfig => {
-        const currentGroup = prevConfig.properties[groupKey] as Array<CustomPropertyItem | CustomNumericPropertyItem>;
+        const currentGroup = prevConfig.properties[groupKey] as Array<AnyCustomPropertyItem>;
         const updatedGroup = [...currentGroup];
         updatedGroup[itemIndex] = newItemData;
         return {
@@ -128,10 +132,10 @@ export const ThemeProvider = ({ children }: { children: ReactNode }) => {
   const addPropertyListItem = useCallback(
     (
       groupKey: PropertyGroupKey,
-      newItemData: CustomPropertyItem | CustomNumericPropertyItem
+      newItemData: AnyCustomPropertyItem
     ) => {
       updateThemeConfigState(prevConfig => {
-        const currentGroup = prevConfig.properties[groupKey] as Array<CustomPropertyItem | CustomNumericPropertyItem>;
+        const currentGroup = prevConfig.properties[groupKey] as Array<AnyCustomPropertyItem>;
         return {
           ...prevConfig,
           properties: {
@@ -150,7 +154,7 @@ export const ThemeProvider = ({ children }: { children: ReactNode }) => {
       itemIndex: number
     ) => {
       updateThemeConfigState(prevConfig => {
-        const currentGroup = prevConfig.properties[groupKey] as Array<CustomPropertyItem | CustomNumericPropertyItem>;
+        const currentGroup = prevConfig.properties[groupKey] as Array<AnyCustomPropertyItem>;
         const updatedGroup = currentGroup.filter((_, index) => index !== itemIndex);
         return {
           ...prevConfig,
@@ -206,7 +210,7 @@ export const ThemeProvider = ({ children }: { children: ReactNode }) => {
     const initialSeed = INITIAL_THEME_CONFIG.colors.seedColor;
     const generatedColors = generateMaterialColorsFromSeed(initialSeed);
     updateThemeConfigState({
-      ...INITIAL_THEME_CONFIG, // This will reset properties to their default array structures
+      ...INITIAL_THEME_CONFIG, 
       colors: {
         ...INITIAL_THEME_CONFIG.colors,
         ...generatedColors,

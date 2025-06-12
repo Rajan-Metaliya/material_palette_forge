@@ -9,36 +9,35 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
 import { Trash2, PlusCircle } from 'lucide-react';
-import type { ThemeGradient, CustomPropertyItem, CustomNumericPropertyItem, ThemeProperties } from '@/types/theme';
+import type { ThemeGradient, ThemeProperties, CustomStringPropertyItem, CustomNumericPropertyItem } from '@/types/theme';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import ColorInput from './ColorInput';
 import { useToast } from "@/hooks/use-toast";
 
 type PropertyGroupKey = keyof Pick<ThemeProperties, 'spacing' | 'borderRadius' | 'borderWidth' | 'opacity' | 'elevation'>;
+type ItemValueType = 'string' | 'number'; // To distinguish between CustomStringPropertyItem and CustomNumericPropertyItem
 
 interface CustomPropertyEditorProps {
   groupKey: PropertyGroupKey;
   groupLabel: string;
-  itemType?: 'string' | 'number'; 
+  itemValueType: ItemValueType; // Explicitly define if values are strings or numbers
   namePlaceholder?: string; 
   valuePlaceholder?: string; 
-  valueSuffix?: string; 
-  displayUnitDescriptor?: string; 
+  displayUnitDescriptor?: string; // e.g., "px", "0.0 - 1.0", "CSS boxShadow"
 }
 
 const CustomPropertyEditor: React.FC<CustomPropertyEditorProps> = ({
   groupKey,
   groupLabel,
-  itemType = 'string',
+  itemValueType,
   namePlaceholder = "e.g., itemKey",
   valuePlaceholder = "e.g., value",
-  valueSuffix,
   displayUnitDescriptor,
 }) => {
   const { themeConfig, updatePropertyListItem, addPropertyListItem, removePropertyListItem } = useTheme();
   const { toast } = useToast();
   
-  const items = themeConfig.properties[groupKey] as Array<CustomPropertyItem | CustomNumericPropertyItem>;
+  const items = themeConfig.properties[groupKey] as Array<CustomStringPropertyItem | CustomNumericPropertyItem>;
 
   const handleNameChange = (index: number, newName: string) => {
     if (newName.trim() === '') {
@@ -51,66 +50,51 @@ const CustomPropertyEditor: React.FC<CustomPropertyEditorProps> = ({
     }
 
     const currentItem = items[index];
-    updatePropertyListItem(groupKey, index, { ...currentItem, name: newName });
+    // Cast to specific type based on itemValueType before spreading
+    if (itemValueType === 'number') {
+        updatePropertyListItem(groupKey, index, { ...currentItem as CustomNumericPropertyItem, name: newName });
+    } else {
+        updatePropertyListItem(groupKey, index, { ...currentItem as CustomStringPropertyItem, name: newName });
+    }
   };
 
   const handleValueChange = (index: number, newValueFromInput: string) => {
     const currentItem = items[index];
-    if (itemType === 'number') { 
+    if (itemValueType === 'number') { 
       const numValue = parseFloat(newValueFromInput);
       if (isNaN(numValue)) {
         toast({ title: "Validation Error", description: "Invalid number for value.", variant: "destructive" });
-        // Optionally revert or keep old value. For now, we just don't update if invalid.
-        // To revert, you might need to temporarily store the old value or re-fetch.
         return; 
       }
-      updatePropertyListItem(groupKey, index, { ...currentItem, value: numValue } as CustomNumericPropertyItem);
-    } else { 
-      if (valueSuffix) { 
-        const num = parseFloat(newValueFromInput);
-        if (isNaN(num)) {
-          toast({ title: "Validation Error", description: "Invalid number for value.", variant: "destructive" });
-          return;
-        }
-        const finalValue = `${num}${valueSuffix}`;
-        updatePropertyListItem(groupKey, index, { ...currentItem, value: finalValue } as CustomPropertyItem);
-      } else { 
-        updatePropertyListItem(groupKey, index, { ...currentItem, value: newValueFromInput } as CustomPropertyItem);
-      }
+      updatePropertyListItem(groupKey, index, { ...(currentItem as CustomNumericPropertyItem), value: numValue });
+    } else { // itemValueType === 'string' (e.g., for Elevation)
+      updatePropertyListItem(groupKey, index, { ...(currentItem as CustomStringPropertyItem), value: newValueFromInput });
     }
   };
 
   const handleAddItem = () => {
     const newItemName = `new${groupLabel.replace(/\s+/g, '')}${items.length + 1}`;
-    if (itemType === 'number') { 
-      addPropertyListItem(groupKey, { name: newItemName, value: 0 } as CustomNumericPropertyItem);
-    } else { 
-      let defaultValue: string;
-      if (valueSuffix) {
-        const phNumericPart = valuePlaceholder.match(/^\d+(\.\d+)?/); 
-        defaultValue = phNumericPart ? `${phNumericPart[0]}${valueSuffix}` : `0${valueSuffix}`;
-      } else {
-        defaultValue = valuePlaceholder.startsWith("e.g., ") ? valuePlaceholder.substring(6) : (valuePlaceholder || "default value");
-      }
-      addPropertyListItem(groupKey, { name: newItemName, value: defaultValue } as CustomPropertyItem);
+    if (itemValueType === 'number') { 
+        let defaultValue = 0;
+        if (valuePlaceholder.match(/^-?\d+(\.\d+)?$/)) { // Check if placeholder is a simple number
+            defaultValue = parseFloat(valuePlaceholder);
+        } else if (groupKey === 'opacity') {
+            defaultValue = 0.5; // Default for opacity
+        }
+      addPropertyListItem(groupKey, { name: newItemName, value: defaultValue } as CustomNumericPropertyItem);
+    } else { // itemValueType === 'string'
+      const defaultValue = valuePlaceholder.startsWith("e.g., ") ? valuePlaceholder.substring(6) : (valuePlaceholder || "default value");
+      addPropertyListItem(groupKey, { name: newItemName, value: defaultValue } as CustomStringPropertyItem);
     }
   };
-
-  const isNumericOnlyValueInput = !!valueSuffix || itemType === 'number';
 
   return (
     <AccordionItem value={groupKey}>
       <AccordionTrigger className="text-lg font-semibold">{groupLabel}</AccordionTrigger>
       <AccordionContent className="pt-4 space-y-4">
         {items.map((item, index) => {
-          let displayValueForInput = item.value.toString();
-          if (valueSuffix && itemType === 'string' && typeof item.value === 'string') {
-            if (item.value.endsWith(valueSuffix)) {
-              displayValueForInput = item.value.slice(0, -item.value.length + item.value.lastIndexOf(valueSuffix));
-            }
-            const numPart = parseFloat(displayValueForInput);
-            displayValueForInput = isNaN(numPart) ? "0" : numPart.toString();
-          }
+          // Value for input field should always be string, even if stored as number
+          const displayValueForInput = item.value.toString();
 
           return (
             <Card key={index} className="p-4 space-y-3 relative">
@@ -127,16 +111,16 @@ const CustomPropertyEditor: React.FC<CustomPropertyEditorProps> = ({
                 <div className="space-y-1.5">
                   <Label htmlFor={`${groupKey}-value-${index}`}>
                     Value 
-                    {valueSuffix ? ` (${valueSuffix})` : (displayUnitDescriptor ? ` (${displayUnitDescriptor})` : '')}
+                    {displayUnitDescriptor ? ` (${displayUnitDescriptor})` : ''}
                   </Label>
                   <Input
                     id={`${groupKey}-value-${index}`}
-                    type={isNumericOnlyValueInput ? 'number' : 'text'}
+                    type={itemValueType === 'number' ? 'number' : 'text'}
                     value={displayValueForInput}
                     onChange={(e) => handleValueChange(index, e.target.value)}
                     placeholder={valuePlaceholder}
-                    {...(itemType === 'number' && groupKey === 'opacity' ? { step: "0.01", min: "0", max: "1" } : {})}
-                    {...(valueSuffix ? { step: "1", min: "0" } : {})}
+                    {...(itemValueType === 'number' && groupKey === 'opacity' ? { step: "0.01", min: "0", max: "1" } : {})}
+                    {...(itemValueType === 'number' && (groupKey === 'spacing' || groupKey === 'borderRadius' || groupKey === 'borderWidth') ? { step: "1", min: "0" } : {})}
                   />
                 </div>
               </div>
@@ -194,22 +178,25 @@ const PropertiesSection: React.FC = () => {
           <CustomPropertyEditor 
             groupKey="spacing" 
             groupLabel="Spacing" 
+            itemValueType="number"
             valuePlaceholder="8" 
-            valueSuffix="px" 
+            displayUnitDescriptor="px" 
             namePlaceholder="e.g., small"
           />
           <CustomPropertyEditor 
             groupKey="borderRadius" 
             groupLabel="Border Radiuses" 
+            itemValueType="number"
             valuePlaceholder="4" 
-            valueSuffix="px"
+            displayUnitDescriptor="px"
             namePlaceholder="e.g., buttonRadius"
           />
           <CustomPropertyEditor 
             groupKey="borderWidth" 
             groupLabel="Border Widths" 
+            itemValueType="number"
             valuePlaceholder="1" 
-            valueSuffix="px"
+            displayUnitDescriptor="px"
             namePlaceholder="e.g., cardBorder"
           />
           
@@ -322,7 +309,7 @@ const PropertiesSection: React.FC = () => {
           <CustomPropertyEditor 
             groupKey="opacity" 
             groupLabel="Opacities" 
-            itemType="number" 
+            itemValueType="number" 
             valuePlaceholder="0.5"
             displayUnitDescriptor="0.0 - 1.0"
             namePlaceholder="e.g., imageHover"
@@ -330,6 +317,7 @@ const PropertiesSection: React.FC = () => {
           <CustomPropertyEditor 
             groupKey="elevation" 
             groupLabel="Elevations (Shadows)" 
+            itemValueType="string" // Elevation values are complex strings
             valuePlaceholder="0px 1px 3px rgba(0,0,0,0.2)" 
             displayUnitDescriptor="CSS boxShadow"
             namePlaceholder="e.g., cardShadow"
@@ -342,4 +330,3 @@ const PropertiesSection: React.FC = () => {
 };
 
 export default PropertiesSection;
-

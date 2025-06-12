@@ -1,19 +1,20 @@
+
 export interface MaterialColors {
-  seedColor: string;
+  seedColor: string; // Used as input for generation, not a direct ColorScheme role
   primary: string;
   secondary: string;
   tertiary: string;
   error: string;
-  surface: string;
-  onSurface: string;
+  surface: string; // Maps to ColorScheme.surface
+  onSurface: string; // Maps to ColorScheme.onSurface
   primaryContainer: string;
-  onPrimaryContainer: string;
+  onPrimaryContainer: string; // This will map to ColorScheme.onPrimary for text on primary, and onPrimaryContainer for text on primaryContainer. Needs care.
   secondaryContainer: string;
-  onSecondaryContainer: string;
+  onSecondaryContainer: string; // Similar mapping for secondary
   tertiaryContainer: string;
-  onTertiaryContainer: string;
+  onTertiaryContainer: string; // Similar mapping for tertiary
   errorContainer: string;
-  onErrorContainer: string;
+  onErrorContainer: string; // Similar mapping for error
   surfaceVariant: string;
   onSurfaceVariant: string;
   outline: string;
@@ -23,6 +24,7 @@ export interface MaterialColors {
   inverseSurface: string;
   onInverseSurface: string;
   inversePrimary: string;
+  // surfaceTint is often same as primary in M3, will be handled in generator
 }
 
 export interface ThemeFonts {
@@ -31,29 +33,31 @@ export interface ThemeFonts {
   monospace: string;
 }
 
-export interface CustomPropertyItem {
+// For properties that are primarily strings, e.g., CSS box-shadow
+export interface CustomStringPropertyItem {
   name: string;
-  value: string; // For Spacing, BorderRadius, BorderWidth, Elevation (string value like '8px', '0 0 2px black')
+  value: string; 
 }
 
+// For properties that are numeric
 export interface CustomNumericPropertyItem {
   name: string;
-  value: number; // For Opacity
+  value: number;
 }
 
-export type ThemeSpacing = CustomPropertyItem[];
-export type ThemeBorderRadius = CustomPropertyItem[];
-export type ThemeBorderWidth = CustomPropertyItem[];
-export type ThemeOpacity = CustomNumericPropertyItem[];
-export type ThemeElevation = CustomPropertyItem[];
+export type ThemeSpacing = CustomNumericPropertyItem[]; // e.g., { name: 'small', value: 8 }
+export type ThemeBorderRadius = CustomNumericPropertyItem[]; // e.g., { name: 'medium', value: 12 }
+export type ThemeBorderWidth = CustomNumericPropertyItem[]; // e.g., { name: 'thin', value: 1 }
+export type ThemeOpacity = CustomNumericPropertyItem[]; // e.g., { name: 'disabled', value: 0.38 }
+export type ThemeElevation = CustomStringPropertyItem[]; // e.g., { name: 'level1', value: '0px 1px 2px rgba(0,0,0,0.1)'}
 
 
 export interface ThemeGradient {
   name: string;
   type: 'linear' | 'radial';
-  direction?: string; // For linear, e.g., 'to right', '45deg'
-  shape?: string; // For radial, e.g., 'circle'
-  extent?: string; // For radial, e.g., 'farthest-corner'
+  direction?: string; 
+  shape?: string; 
+  extent?: string; 
   colors: string[];
 }
 
@@ -72,3 +76,4 @@ export interface ThemeConfiguration {
   fonts: ThemeFonts;
   properties: ThemeProperties;
 }
+

@@ -1,42 +1,34 @@
 
-import type { ThemeConfiguration, MaterialColors, ThemeGradient, ThemeSpacing, ThemeBorderRadius, ThemeBorderWidth, ThemeOpacity, ThemeElevation, CustomPropertyItem, CustomNumericPropertyItem } from '@/types/theme';
+import type { ThemeConfiguration, MaterialColors, ThemeGradient, CustomStringPropertyItem, CustomNumericPropertyItem } from '@/types/theme';
 
 function toFlutterColor(hex: string): string {
   return `Color(0xFF${hex.substring(1).toUpperCase()})`;
 }
 
-function parseUnitValueJS(value: string): number {
-  const parsed = parseFloat(value);
-  return isNaN(parsed) ? 0.0 : parsed;
-}
-
 // Helper to sanitize names for Dart variables
 function sanitizeDartVariableName(name: string): string {
   if (!name) return 'unnamedProperty';
-  // Replace spaces and invalid characters with underscores or convert to camelCase
   let sanitized = name.replace(/[^a-zA-Z0-9_]/g, '_');
-  // Ensure it doesn't start with a number or underscore (if not allowed by style)
   if (sanitized.match(/^[^a-zA-Z_]/)) {
     sanitized = '_' + sanitized;
   }
-  // Convert to camelCase (optional, but good practice)
   sanitized = sanitized.replace(/_([a-zA-Z])/g, (match, p1) => p1.toUpperCase());
   if (sanitized.length === 0) return 'unnamedProperty';
-  return sanitized.length > 0 && sanitized[0] === sanitized[0].toUpperCase() ? // check if first letter is uppercase
-    sanitized[0].toLowerCase() + sanitized.substring(1) : sanitized; // if so, make it lowercase
+  return sanitized.length > 0 && sanitized[0] === sanitized[0].toUpperCase() ?
+    sanitized[0].toLowerCase() + sanitized.substring(1) : sanitized;
 }
 
 
 function generatePropertyExtensionClass(
   className: string,
-  properties: Array<CustomPropertyItem | CustomNumericPropertyItem>,
-  valueType: 'double' | 'String', // Dart type for the value
-  valueParser?: (value: string | number) => string // How to format value for Dart instantiation
+  properties: Array<CustomNumericPropertyItem | CustomStringPropertyItem>,
+  valueTypeInDart: 'double' | 'String', 
+  valueParserForDartInstance: (value: string | number) => string 
 ): string {
   
   const props = properties.map(p => {
     const varName = sanitizeDartVariableName(p.name);
-    return `  final ${valueType} ${varName};`
+    return `  final ${valueTypeInDart} ${varName};`
   }).join('\n');
   
   const constructorArgs = properties.map(p => {
@@ -46,7 +38,7 @@ function generatePropertyExtensionClass(
 
   const copyWithArgs = properties.map(p => {
     const varName = sanitizeDartVariableName(p.name);
-    return `${valueType}? ${varName},`
+    return `${valueTypeInDart}? ${varName},`
   }).join('');
 
   const copyWithReturn = properties.map(p => {
@@ -56,15 +48,15 @@ function generatePropertyExtensionClass(
 
   const lerpLogic = properties.map(p => {
     const varName = sanitizeDartVariableName(p.name);
-    if (valueType === 'double') {
+    if (valueTypeInDart === 'double') {
       return `      ${varName}: lerpDouble(this.${varName}, other.${varName}, t)!,`;
     }
-    return `      ${varName}: t < 0.5 ? this.${varName} : other.${varName},`; // For String, just pick one
+    return `      ${varName}: t < 0.5 ? this.${varName} : other.${varName},`; 
   }).join('\n');
 
   const instanceArgs = properties.map(p => {
     const varName = sanitizeDartVariableName(p.name);
-    const parsedValue = valueParser ? valueParser(p.value) : `'${p.value.toString().replace(/'/g, "\\'")}'`;
+    const parsedValue = valueParserForDartInstance(p.value);
     return `      ${varName}: ${parsedValue},`;
   }).join('\n');
 
@@ -111,22 +103,48 @@ export function generateFlutterCode(theme: ThemeConfiguration): string {
   const fonts = theme.fonts;
   const properties = theme.properties;
 
-  let colorSchemeEntries = '';
-  for (const key in colors) {
-    if (Object.prototype.hasOwnProperty.call(colors, key)) {
-      const colorKey = key as keyof MaterialColors;
-      if (colorKey === 'seedColor') { 
-         colorSchemeEntries += `    seedColor: ${toFlutterColor(colors[colorKey])},\n`;
-      }
-      colorSchemeEntries += `    ${colorKey}: ${toFlutterColor(colors[colorKey])},\n`;
-    }
-  }
+  let colorSchemeEntries = `
+    brightness: Brightness.light, // TODO: Make this dynamic for dark theme
+    primary: ${toFlutterColor(colors.primary)},
+    onPrimary: ${toFlutterColor(colors.onPrimaryContainer)}, // Text on primary buttons/elements
+    primaryContainer: ${toFlutterColor(colors.primaryContainer)},
+    onPrimaryContainer: ${toFlutterColor(colors.onPrimaryContainer)}, // Text on primary container elements
+    secondary: ${toFlutterColor(colors.secondary)},
+    onSecondary: ${toFlutterColor(colors.onSecondaryContainer)}, // Text on secondary buttons/elements
+    secondaryContainer: ${toFlutterColor(colors.secondaryContainer)},
+    onSecondaryContainer: ${toFlutterColor(colors.onSecondaryContainer)}, // Text on secondary container elements
+    tertiary: ${toFlutterColor(colors.tertiary)},
+    onTertiary: ${toFlutterColor(colors.onTertiaryContainer)}, // Text on tertiary buttons/elements
+    tertiaryContainer: ${toFlutterColor(colors.tertiaryContainer)},
+    onTertiaryContainer: ${toFlutterColor(colors.onTertiaryContainer)}, // Text on tertiary container elements
+    error: ${toFlutterColor(colors.error)},
+    onError: ${toFlutterColor(colors.onErrorContainer)}, // Text on error buttons/elements
+    errorContainer: ${toFlutterColor(colors.errorContainer)},
+    onErrorContainer: ${toFlutterColor(colors.onErrorContainer)}, // Text on error container elements
+    surface: ${toFlutterColor(colors.surface)}, // Was background
+    onSurface: ${toFlutterColor(colors.onSurface)}, // Was onBackground
+    surfaceVariant: ${toFlutterColor(colors.surfaceVariant)},
+    onSurfaceVariant: ${toFlutterColor(colors.onSurfaceVariant)},
+    outline: ${toFlutterColor(colors.outline)},
+    outlineVariant: ${toFlutterColor(colors.outlineVariant)},
+    shadow: ${toFlutterColor(colors.shadow)},
+    scrim: ${toFlutterColor(colors.scrim)},
+    inverseSurface: ${toFlutterColor(colors.inverseSurface)},
+    onInverseSurface: ${toFlutterColor(colors.onInverseSurface)},
+    inversePrimary: ${toFlutterColor(colors.inversePrimary)},
+    surfaceTint: ${toFlutterColor(colors.primary)}, // M3 often uses primary as surfaceTint
+  `;
   
-  const spacingClass = generatePropertyExtensionClass('AppSpacing', properties.spacing, 'double', (v) => `parseUnitValue('${v}')`);
-  const borderRadiusClass = generatePropertyExtensionClass('AppBorderRadius', properties.borderRadius, 'double', (v) => `parseUnitValue('${v}')`);
-  const borderWidthClass = generatePropertyExtensionClass('AppBorderWidth', properties.borderWidth, 'double', (v) => `parseUnitValue('${v}')`);
-  const opacityClass = generatePropertyExtensionClass('AppOpacity', properties.opacity, 'double', (v) => v.toString());
-  const elevationClass = generatePropertyExtensionClass('AppElevation', properties.elevation, 'String', (v) => `'${v.toString().replace(/'/g, "\\'")}'`);
+  // For Spacing, BorderRadius, BorderWidth, Opacity: values are numbers.
+  // Dart needs them as doubles, e.g., 8.0. Use toFixed(1) to ensure decimal.
+  const numericValueParser = (v: string | number) => typeof v === 'number' ? v.toFixed(1) : parseFloat(v.toString()).toFixed(1);
+  const stringValueParser = (v: string | number) => `'${v.toString().replace(/'/g, "\\'")}'`;
+
+  const spacingClass = generatePropertyExtensionClass('AppSpacing', properties.spacing, 'double', numericValueParser);
+  const borderRadiusClass = generatePropertyExtensionClass('AppBorderRadius', properties.borderRadius, 'double', numericValueParser);
+  const borderWidthClass = generatePropertyExtensionClass('AppBorderWidth', properties.borderWidth, 'double', numericValueParser);
+  const opacityClass = generatePropertyExtensionClass('AppOpacity', properties.opacity, 'double', numericValueParser); // Opacity values are already 0.0-1.0
+  const elevationClass = generatePropertyExtensionClass('AppElevation', properties.elevation, 'String', stringValueParser);
 
 
   const gradientDataInstances = properties.gradients.map(g => {
@@ -149,7 +167,7 @@ import 'dart:math' show pi;
 
 // Generated by Material Palette Forge
 
-// Utility function to parse numeric values from strings with units
+// Utility function to parse numeric values from strings with units (e.g., from elevation strings)
 double parseUnitValue(String value) {
   if (value.isEmpty) return 0.0;
   final cleanValue = value
@@ -215,6 +233,7 @@ class AppGradientData {
       TileMode tileMode = TileMode.clamp; 
       Alignment center = Alignment.center; 
       double radius = 0.5;
+      // TODO: Parse shape and extent for more precise radial gradients
       return RadialGradient(
         colors: colors,
         center: center,
@@ -257,12 +276,14 @@ class AppGradients extends ThemeExtension<AppGradients> {
     if (other is! AppGradients) {
       return this;
     }
+    // Simple lerp: take 'other' if t > 0.5, otherwise 'this'.
+    // For more complex lerping of gradient lists, custom logic would be needed.
     return t < 0.5 ? this : other;
   }
 }
 
-// Instance for AppGradients
-final _appGradients = AppGradients(
+// Instance for AppGradients - ensuring lowercase name for consistency
+final _appgradients = AppGradients(
   gradients: [
 ${gradientDataInstances}
   ],
@@ -271,7 +292,7 @@ ${gradientDataInstances}
 // --- Main AppTheme Class ---
 class AppTheme {
   static ThemeData get lightTheme {
-    final colorScheme = ColorScheme.fromSeed(
+    final colorScheme = ColorScheme(
 ${colorSchemeEntries.trimEnd()}
     );
 
@@ -296,20 +317,17 @@ ${colorSchemeEntries.trimEnd()}
       displayColor: colorScheme.onSurface,
     );
     
-    // Use the pre-generated instances
     final appSpacing = _appspacing;
     final appBorderRadius = _appborderradius;
     final appBorderWidth = _appborderwidth;
     final appOpacity = _appopacity;
     final appElevation = _appelevation;
-    final appGradients = _appgradients;
+    final appGradients = _appgradients; // Corrected to use lowercase instance
 
-    // Example of using a dynamic property if it exists, otherwise a fallback
-    // This assumes you have 'md' in borderRadius, change as needed for your defaults
     final defaultCardBorderRadius = appBorderRadius.md ?? 8.0; 
-    final defaultElevationLevel1 = appElevation.level1 ?? '0px 1px 2px rgba(0,0,0,0.1)';
-    // For elevation, you'll need a robust parser in your app if you use the string directly for BoxShadow list.
-    // parseUnitValue is simple and only gets the first number, not for complex shadows.
+    // Example for elevation string parsing - careful with direct use
+    // String defaultElevationLevel1 = appElevation.level1 ?? '0px 1px 2px rgba(0,0,0,0.1)';
+    // double cardElevation = parseUnitValue(defaultElevationLevel1.split(' ')[1]); // Highly simplified, not for robust shadow parsing
 
     return ThemeData(
       useMaterial3: true,
@@ -327,22 +345,22 @@ ${colorSchemeEntries.trimEnd()}
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(defaultCardBorderRadius),
         ),
-        elevation: parseUnitValue(defaultElevationLevel1.split(' ')[1]), 
+        // elevation: cardElevation, // Elevation in Flutter is a single double, complex shadows need BoxShadow list
         color: colorScheme.surfaceContainerHighest, 
         surfaceTintColor: colorScheme.surfaceTint, 
       ),
       buttonTheme: ButtonThemeData(
         shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(appBorderRadius.full ?? 999.0),
+          borderRadius: BorderRadius.circular(appBorderRadius.full ?? 9999.0),
         ),
-        padding: EdgeInsets.symmetric(horizontal: appSpacing.lg ?? 16.0, vertical: appSpacing.sm ?? 8.0),
+        padding: EdgeInsets.symmetric(horizontal: appSpacing.lg ?? 24.0, vertical: appSpacing.sm ?? 8.0),
       ),
        filledButtonTheme: FilledButtonThemeData(
         style: FilledButton.styleFrom(
             shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(appBorderRadius.full ?? 999.0),
+              borderRadius: BorderRadius.circular(appBorderRadius.full ?? 9999.0),
             ),
-            padding: EdgeInsets.symmetric(horizontal: appSpacing.lg ?? 24.0, vertical: appSpacing.md ?? 12.0),
+            padding: EdgeInsets.symmetric(horizontal: appSpacing.lg ?? 24.0, vertical: appSpacing.md ?? 16.0),
             backgroundColor: colorScheme.primary,
             foregroundColor: colorScheme.onPrimary,
         )
@@ -350,18 +368,18 @@ ${colorSchemeEntries.trimEnd()}
       outlinedButtonTheme: OutlinedButtonThemeData(
          style: OutlinedButton.styleFrom(
             shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(appBorderRadius.full ?? 999.0),
+              borderRadius: BorderRadius.circular(appBorderRadius.full ?? 9999.0),
             ),
-             padding: EdgeInsets.symmetric(horizontal: appSpacing.lg ?? 24.0, vertical: appSpacing.md ?? 12.0),
+             padding: EdgeInsets.symmetric(horizontal: appSpacing.lg ?? 24.0, vertical: appSpacing.md ?? 16.0),
              side: BorderSide(color: colorScheme.outline, width: appBorderWidth.thin ?? 1.0),
         )
       ),
       textButtonTheme: TextButtonThemeData(
          style: TextButton.styleFrom(
             shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(appBorderRadius.full ?? 999.0),
+              borderRadius: BorderRadius.circular(appBorderRadius.full ?? 9999.0),
             ),
-             padding: EdgeInsets.symmetric(horizontal: appSpacing.lg ?? 24.0, vertical: appSpacing.md ?? 12.0),
+             padding: EdgeInsets.symmetric(horizontal: appSpacing.lg ?? 24.0, vertical: appSpacing.md ?? 16.0),
         )
       ),
       inputDecorationTheme: InputDecorationTheme(
@@ -378,7 +396,7 @@ ${colorSchemeEntries.trimEnd()}
             borderSide: BorderSide(color: colorScheme.primary, width: appBorderWidth.medium ?? 2.0),
         ),
         filled: true,
-        fillColor: colorScheme.surfaceContainerHighest,
+        fillColor: colorScheme.surfaceContainerHighest, // Or surfaceVariant
         contentPadding: EdgeInsets.symmetric(horizontal: appSpacing.md ?? 16.0, vertical: appSpacing.sm ?? 12.0),
       ),
       dialogTheme: DialogTheme(
@@ -406,7 +424,7 @@ ${colorSchemeEntries.trimEnd()}
 
 
 export function generateJson(theme: ThemeConfiguration): string {
-  return JSON.stringify(theme, null, 2); // Simpler JSON output reflecting the direct structure
+  return JSON.stringify(theme, null, 2); 
 }
 
 export function generateFigmaTokens(theme: ThemeConfiguration): string {
@@ -414,10 +432,10 @@ export function generateFigmaTokens(theme: ThemeConfiguration): string {
     global: { 
       color: {},
       fontFamily: {},
-      spacing: {},
-      borderRadius: {},
-      borderWidth: {},
-      opacity: {},
+      spacing: {}, // Will store numbers
+      borderRadius: {}, // Will store numbers
+      borderWidth: {}, // Will store numbers
+      opacity: {}, // Will store numbers (as string for Figma)
       boxShadow: {}, 
       gradient: {},
     }
@@ -436,23 +454,25 @@ export function generateFigmaTokens(theme: ThemeConfiguration): string {
   fontsTarget.secondary = { value: theme.fonts.secondary, type: "fontFamily" };
   fontsTarget.monospace = { value: theme.fonts.monospace, type: "fontFamily" };
   
-  (theme.properties.spacing as CustomPropertyItem[]).forEach(item => {
-    figmaTokens.global.spacing[sanitizeDartVariableName(item.name)] = { value: item.value, type: "spacing" };
+  // Spacing, BorderRadius, BorderWidth now store numbers directly, with "px" implied by Figma's type
+  (theme.properties.spacing as CustomNumericPropertyItem[]).forEach(item => {
+    figmaTokens.global.spacing[sanitizeDartVariableName(item.name)] = { value: `${item.value}px`, type: "spacing" };
   });
 
-  (theme.properties.borderRadius as CustomPropertyItem[]).forEach(item => {
-    figmaTokens.global.borderRadius[sanitizeDartVariableName(item.name)] = { value: item.value, type: "borderRadius" };
+  (theme.properties.borderRadius as CustomNumericPropertyItem[]).forEach(item => {
+    figmaTokens.global.borderRadius[sanitizeDartVariableName(item.name)] = { value: `${item.value}px`, type: "borderRadius" };
   });
   
-  (theme.properties.borderWidth as CustomPropertyItem[]).forEach(item => {
-    figmaTokens.global.borderWidth[sanitizeDartVariableName(item.name)] = { value: item.value, type: "borderWidth" };
+  (theme.properties.borderWidth as CustomNumericPropertyItem[]).forEach(item => {
+    figmaTokens.global.borderWidth[sanitizeDartVariableName(item.name)] = { value: `${item.value}px`, type: "borderWidth" };
   });
   
   (theme.properties.opacity as CustomNumericPropertyItem[]).forEach(item => {
+    // Figma opacity is often 0-1 or 0-100%, let's stick to 0-1 as string
     figmaTokens.global.opacity[sanitizeDartVariableName(item.name)] = { value: item.value.toString(), type: "opacity" };
   });
   
-  (theme.properties.elevation as CustomPropertyItem[]).forEach(item => {
+  (theme.properties.elevation as CustomStringPropertyItem[]).forEach(item => {
     figmaTokens.global.boxShadow[sanitizeDartVariableName(item.name)] = { value: item.value, type: "boxShadow" };
   });
 
@@ -468,9 +488,10 @@ export function generateFigmaTokens(theme: ThemeConfiguration): string {
     const tokenName = sanitizeDartVariableName(gradient.name) || `gradient-${figmaTokens.global.gradient.length + 1}`;
     figmaTokens.global.gradient[tokenName] = {
       value: figmaGradientValue,
-      type: "other" 
+      type: "other" // Figma Tokens plugin might need specific type for gradients if supported directly
     };
   });
 
   return JSON.stringify(figmaTokens, null, 2);
 }
+
