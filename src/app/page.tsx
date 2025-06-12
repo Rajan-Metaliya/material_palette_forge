@@ -1,3 +1,4 @@
+
 "use client";
 
 import Header from '@/components/layout/Header';
@@ -23,7 +24,8 @@ const MainContent = () => {
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 items-start">
-        <div className="space-y-8">
+        {/* Left Column: Controls - Scrolls */}
+        <div className="space-y-8 lg:overflow-y-auto lg:max-h-[calc(100vh-10rem)] lg:pr-4">
           <Tabs defaultValue="colors" className="w-full">
             <TabsList className="grid w-full grid-cols-3">
               <TabsTrigger value="colors" className="text-xs sm:text-sm">
@@ -48,7 +50,8 @@ const MainContent = () => {
           </Tabs>
         </div>
 
-        <div className="space-y-8 lg:sticky lg:top-20"> {/* Sticky preview/output column */}
+        {/* Right Column: Preview & Output - Sticky */}
+        <div className="space-y-8 lg:sticky lg:top-24"> {/* Adjust top value as needed for header height */}
           <ThemePreview />
           <OutputSection />
         </div>

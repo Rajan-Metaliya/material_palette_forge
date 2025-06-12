@@ -1,3 +1,4 @@
+
 "use client";
 
 import React, { useState, useEffect } from 'react';
@@ -74,13 +75,13 @@ const OutputSection: React.FC = () => {
       <CardContent>
         <Tabs value={activeFormat} onValueChange={(value) => setActiveFormat(value as OutputFormat)} className="w-full">
           <TabsList className="grid w-full grid-cols-3 mb-4">
-            <TabsTrigger value="flutter" className="flex items-center justify-center">
+            <TabsTrigger value="flutter" className="flex items-center justify-center text-xs sm:text-sm">
               {getIcon('flutter')} Flutter
             </TabsTrigger>
-            <TabsTrigger value="json" className="flex items-center justify-center">
+            <TabsTrigger value="json" className="flex items-center justify-center text-xs sm:text-sm">
               {getIcon('json')} JSON
             </TabsTrigger>
-            <TabsTrigger value="figma" className="flex items-center justify-center">
+            <TabsTrigger value="figma" className="flex items-center justify-center text-xs sm:text-sm">
               {getIcon('figma')} Figma Tokens
             </TabsTrigger>
           </TabsList>

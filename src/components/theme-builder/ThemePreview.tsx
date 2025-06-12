@@ -4,11 +4,11 @@
 import React, { CSSProperties, useEffect, useState } from 'react';
 import { useTheme } from '@/context/ThemeContext';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
-import type { TextStyleProperties, FontWeightValue } from '@/types/theme';
-import { COMMON_WEB_FONTS } from '@/lib/consts';
-
+import type { TextStyleProperties, FontWeightValue, CustomNumericPropertyItem, CustomStringPropertyItem } from '@/types/theme';
+import { COMMON_WEB_FONTS, MATERIAL_TEXT_STYLE_LABELS, MATERIAL_TEXT_STYLE_ORDER } from '@/lib/consts';
+import { cn } from '@/lib/utils';
 
 // Helper to get the full font stack for CSS
 const getFontStack = (fontFamilyName: string): string => {
@@ -24,18 +24,29 @@ const getCssFontWeight = (fontWeight: FontWeightValue): string | number => {
 };
 
 // Helper to apply text style properties to a CSSProperties object
-const applyTextStyle = (styleProps: TextStyleProperties): CSSProperties => {
+const applyTextStyle = (styleProps?: TextStyleProperties): CSSProperties => {
+  if (!styleProps) return {};
   const cssStyle: CSSProperties = {
     fontFamily: getFontStack(styleProps.fontFamily),
-    fontSize: `${styleProps.fontSize}px`, // Assuming logical pixels for preview
+    fontSize: `${styleProps.fontSize}px`,
     fontWeight: getCssFontWeight(styleProps.fontWeight),
     letterSpacing: `${styleProps.letterSpacing}px`,
-    transition: 'all 0.3s ease-in-out', // Keep transitions
+    transition: 'all 0.2s ease-out',
   };
   if (styleProps.lineHeight !== undefined) {
-    cssStyle.lineHeight = styleProps.lineHeight; // Unitless multiplier
+    cssStyle.lineHeight = styleProps.lineHeight;
   }
   return cssStyle;
+};
+
+const getNumericPropertyValue = (items: CustomNumericPropertyItem[], name: string, defaultValue: number): number => {
+  const item = items.find(i => i.name === name);
+  return item ? item.value : defaultValue;
+};
+
+const getStringPropertyValue = (items: CustomStringPropertyItem[], name: string, defaultValue: string): string => {
+  const item = items.find(i => i.name === name);
+  return item ? item.value : defaultValue;
 };
 
 
@@ -49,7 +60,7 @@ const ThemePreview: React.FC = () => {
 
   if (!mounted) {
     return (
-        <Card className="mt-8">
+        <Card>
             <CardHeader><CardTitle className="text-xl">Theme Preview</CardTitle></CardHeader>
             <CardContent className="animate-pulse">
                 <div className="h-8 bg-muted rounded w-1/4 mb-4"></div>
@@ -64,139 +75,174 @@ const ThemePreview: React.FC = () => {
     );
   }
 
+  const { colors, fonts, properties } = themeConfig;
+
   const previewCardStyle: CSSProperties = {
-    backgroundColor: themeConfig.colors.surface,
-    color: themeConfig.colors.onSurface,
-    border: `1px solid ${themeConfig.colors.outline}`,
-    borderRadius: `${themeConfig.properties.borderRadius.find(r => r.name === 'md')?.value || 8}px`,
-    boxShadow: themeConfig.properties.elevation.find(e => e.name === 'level2')?.value || 'none',
-    transition: 'all 0.3s ease-in-out',
-    // Base font for card, specific text styles will override
-    ...applyTextStyle(themeConfig.fonts.materialTextStyles.bodyMedium), 
+    backgroundColor: colors.surface,
+    color: colors.onSurface,
+    border: `1px solid ${colors.outline}`,
+    borderRadius: `${getNumericPropertyValue(properties.borderRadius, 'md', 8)}px`,
+    boxShadow: getStringPropertyValue(properties.elevation, 'level2', '0px 1px 2px rgba(0, 0, 0, 0.3), 0px 2px 6px 2px rgba(0, 0, 0, 0.15)'),
+    transition: 'all 0.2s ease-out',
+    ...applyTextStyle(fonts.materialTextStyles.bodyMedium),
   };
 
-  const buttonStyle: CSSProperties = {
-    ...applyTextStyle(themeConfig.fonts.materialTextStyles.labelLarge), // Use labelLarge for button text
-    backgroundColor: themeConfig.colors.primary,
-    color: themeConfig.colors.onPrimaryContainer,
-    padding: `${themeConfig.properties.spacing.find(s => s.name === 'sm')?.value || 8}px ${themeConfig.properties.spacing.find(s => s.name === 'md')?.value || 16}px`,
-    borderRadius: `${themeConfig.properties.borderRadius.find(r => r.name === 'full')?.value || 999}px`, // Use full for M3 like buttons
-    border: `1px solid ${themeConfig.colors.primaryContainer}`, // Or primary for a stronger border
-  };
-  
-  const textHeadlineStyle: CSSProperties = {
-    ...applyTextStyle(themeConfig.fonts.materialTextStyles.headlineMedium), // Example: headlineMedium
-    color: themeConfig.colors.primary, // Or onSurface
-  };
-  
-  const textBodyStyle: CSSProperties = {
-    ...applyTextStyle(themeConfig.fonts.materialTextStyles.bodyLarge), // Example: bodyLarge
-    color: themeConfig.colors.onSurfaceVariant, // Or onSurface
+  const spacingMd = getNumericPropertyValue(properties.spacing, 'md', 16);
+  const spacingSm = getNumericPropertyValue(properties.spacing, 'sm', 8);
+
+  const buttonPrimaryStyle: CSSProperties = {
+    ...applyTextStyle(fonts.materialTextStyles.labelLarge),
+    backgroundColor: colors.primary,
+    color: colors.onPrimaryContainer, // M3 often uses onPrimaryContainer for text on primary button
+    padding: `${spacingSm}px ${spacingMd}px`,
+    borderRadius: `${getNumericPropertyValue(properties.borderRadius, 'full', 9999)}px`,
+    border: `1px solid ${colors.primaryContainer}`,
   };
 
-  const gradientStyle: CSSProperties = {
-    background: themeConfig.properties.gradients[0] ? 
-        (themeConfig.properties.gradients[0].type === 'linear' ?
-            `linear-gradient(${themeConfig.properties.gradients[0].direction || 'to right'}, ${themeConfig.properties.gradients[0].colors.join(', ')})`
-          : `radial-gradient(${themeConfig.properties.gradients[0].shape || 'circle'}, ${themeConfig.properties.gradients[0].colors.join(', ')})`)
-        : 'transparent',
-    padding: `${themeConfig.properties.spacing.find(s => s.name === 'md')?.value || 16}px`,
-    borderRadius: `${themeConfig.properties.borderRadius.find(r => r.name === 'sm')?.value || 4}px`,
-    color: themeConfig.colors.onPrimaryContainer,
+  const buttonOutlineStyle: CSSProperties = {
+    ...applyTextStyle(fonts.materialTextStyles.labelLarge),
+    borderColor: colors.outline,
+    color: colors.primary,
+    padding: `${spacingSm}px ${spacingMd}px`,
+    borderRadius: `${getNumericPropertyValue(properties.borderRadius, 'full', 9999)}px`,
+  };
+
+  const gradientStyle: CSSProperties = properties.gradients.length > 0 ? {
+    background: properties.gradients[0].type === 'linear' ?
+        `linear-gradient(${properties.gradients[0].direction || 'to right'}, ${properties.gradients[0].colors.join(', ')})`
+      : `radial-gradient(${properties.gradients[0].shape || 'circle'}, ${properties.gradients[0].colors.join(', ')})`,
+    padding: `${spacingMd}px`,
+    borderRadius: `${getNumericPropertyValue(properties.borderRadius, 'sm', 4)}px`,
+    color: colors.onPrimaryContainer, // Assuming gradient is primary-like
     textAlign: 'center',
-    transition: 'background 0.3s ease-in-out',
-  }
+    transition: 'background 0.2s ease-out',
+    ...applyTextStyle(fonts.materialTextStyles.titleMedium)
+  } : {};
 
 
   return (
-    <Card className="mt-8">
+    <Card>
       <CardHeader>
-        <CardTitle className="text-xl" style={applyTextStyle(themeConfig.fonts.materialTextStyles.titleLarge)}>Theme Preview</CardTitle>
+        <CardTitle className="text-xl" style={applyTextStyle(fonts.materialTextStyles.titleLarge)}>Theme Preview</CardTitle>
+        <CardDescription style={applyTextStyle(fonts.materialTextStyles.bodySmall)}>
+          Live preview of your Material 3 inspired theme.
+        </CardDescription>
       </CardHeader>
       <CardContent style={previewCardStyle} className="p-6 space-y-6">
+        
+        {/* Text Styles Showcase */}
         <div>
-          <h3 className="text-2xl mb-2" style={textHeadlineStyle}>
-            Display Text Example
-          </h3>
-          <p className="text-base" style={textBodyStyle}>
-            This is body text. It demonstrates how general content will appear within the theme.
-            The quick brown fox jumps over the lazy dog, showcasing various characters and spacing.
-          </p>
+            <h4 style={{...applyTextStyle(fonts.materialTextStyles.titleSmall), color: colors.onSurfaceVariant, marginBottom: '0.5rem'}}>Text Styles:</h4>
+            {MATERIAL_TEXT_STYLE_ORDER.slice(0, 3).map(key => ( // Show first 3 Material styles
+                <p key={key} style={{...applyTextStyle(fonts.materialTextStyles[key]), color: colors.onSurface, marginBottom: '0.25rem' }}>
+                    {MATERIAL_TEXT_STYLE_LABELS[key]}: Quick brown fox.
+                </p>
+            ))}
+            {fonts.customTextStyles.length > 0 && (
+                 <p style={{...applyTextStyle(fonts.customTextStyles[0].style), color: colors.onSurface, marginTop: '0.25rem' }}>
+                    {fonts.customTextStyles[0].name} (Custom): Jumps over the lazy dog.
+                </p>
+            )}
         </div>
 
-        <Separator style={{backgroundColor: themeConfig.colors.outlineVariant}}/>
-        
+        <Separator style={{backgroundColor: colors.outlineVariant}}/>
+
+        {/* Buttons and Interaction Elements */}
         <div className="flex flex-wrap gap-4 items-center">
-          <Button style={buttonStyle}>Primary Button</Button>
-          <Button variant="outline" style={{
-            ...applyTextStyle(themeConfig.fonts.materialTextStyles.labelLarge),
-            borderColor: themeConfig.colors.outline,
-            color: themeConfig.colors.primary,
-            borderRadius: `${themeConfig.properties.borderRadius.find(r => r.name === 'full')?.value || 999}px`,
-            padding: `${themeConfig.properties.spacing.find(s => s.name === 'sm')?.value || 8}px ${themeConfig.properties.spacing.find(s => s.name === 'md')?.value || 16}px`,
-          }}>
-            Outline Button
-          </Button>
+          <Button style={buttonPrimaryStyle}>Primary</Button>
+          <Button variant="outline" style={buttonOutlineStyle}>Outline</Button>
            <div style={{
-              ...applyTextStyle(themeConfig.fonts.materialTextStyles.bodySmall),
-              backgroundColor: themeConfig.colors.errorContainer,
-              color: themeConfig.colors.onErrorContainer,
-              padding: `${themeConfig.properties.spacing.find(s => s.name === 'sm')?.value || 8}px`,
-              borderRadius: `${themeConfig.properties.borderRadius.find(r => r.name === 'xs')?.value || 2}px`,
-              border: `1px solid ${themeConfig.colors.error}`,
+              ...applyTextStyle(fonts.materialTextStyles.bodySmall),
+              backgroundColor: colors.errorContainer,
+              color: colors.onErrorContainer,
+              padding: `${getNumericPropertyValue(properties.spacing, 'xs', 4)}px ${spacingSm}px`,
+              borderRadius: `${getNumericPropertyValue(properties.borderRadius, 'xs', 2)}px`,
+              border: `1px solid ${colors.error}`,
            }}>
-            Error Message Area
+            Error Message
            </div>
         </div>
 
-        <Separator style={{backgroundColor: themeConfig.colors.outlineVariant}}/>
-        
-        {themeConfig.properties.gradients.length > 0 && (
-            <div style={{...gradientStyle, ...applyTextStyle(themeConfig.fonts.materialTextStyles.titleMedium)}}>
-                <p>Gradient Example</p>
+        {properties.gradients.length > 0 && (
+          <>
+            <Separator style={{backgroundColor: colors.outlineVariant}}/>
+            <div style={gradientStyle}>
+                <p>{properties.gradients[0].name}</p>
             </div>
+          </>
         )}
+        
+        <Separator style={{backgroundColor: colors.outlineVariant}}/>
+        
+        {/* Properties Showcase */}
+        <div>
+            <h4 style={{...applyTextStyle(fonts.materialTextStyles.titleSmall), color: colors.onSurfaceVariant, marginBottom: '0.75rem'}}>Properties Showcase:</h4>
+            
+            <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
+                {/* Spacing Example */}
+                <div className="flex flex-col items-center">
+                    <p style={{...applyTextStyle(fonts.materialTextStyles.labelSmall), marginBottom: '0.25rem'}}>Spacing (md)</p>
+                    <div style={{ padding: `${spacingMd}px`, backgroundColor: colors.surfaceVariant, borderRadius: '4px' }}>
+                        <div style={{ width: '20px', height: '20px', backgroundColor: colors.primaryContainer }}></div>
+                    </div>
+                </div>
 
-        <div className="grid grid-cols-2 gap-4">
-            <div style={{
-                padding: `${themeConfig.properties.spacing.find(s => s.name === 'md')?.value || 16}px`,
-                border: `${themeConfig.properties.borderWidth.find(bw => bw.name === 'medium')?.value || 2}px solid ${themeConfig.colors.secondaryContainer}`,
-                borderRadius: `${themeConfig.properties.borderRadius.find(r => r.name === 'lg')?.value || 12}px`,
-                backgroundColor: themeConfig.colors.surfaceVariant,
-                boxShadow: themeConfig.properties.elevation.find(e => e.name === 'level1')?.value || 'none',
-                transition: 'all 0.3s ease-in-out',
-            }}>
-                <p style={{...applyTextStyle(themeConfig.fonts.materialTextStyles.bodyMedium), color: themeConfig.colors.onSurfaceVariant}}>
-                    Component with Radius & Border (Lg)
-                </p>
-            </div>
-            <div style={{
-                padding: `${themeConfig.properties.spacing.find(s => s.name === 'sm')?.value || 8}px`,
-                border: `${themeConfig.properties.borderWidth.find(bw => bw.name === 'thin')?.value || 1}px solid ${themeConfig.colors.tertiaryContainer}`,
-                borderRadius: `${themeConfig.properties.borderRadius.find(r => r.name === 'xs')?.value || 2}px`,
-                backgroundColor: themeConfig.colors.tertiaryContainer,
-                color: themeConfig.colors.onTertiaryContainer,
-                boxShadow: themeConfig.properties.elevation.find(e => e.name === 'level3')?.value || 'none',
-                opacity: themeConfig.properties.opacity.find(o => o.name === 'hover')?.value || 1, // Example opacity
-                transition: 'all 0.3s ease-in-out',
-            }}>
-                <p style={applyTextStyle(themeConfig.fonts.materialTextStyles.labelMedium)}>
-                    Another Component (Xs Radius)
-                </p>
+                {/* Border Radius Example */}
+                <div className="flex flex-col items-center">
+                    <p style={{...applyTextStyle(fonts.materialTextStyles.labelSmall), marginBottom: '0.25rem'}}>Radius (lg)</p>
+                    <div style={{ 
+                        width: '50px', 
+                        height: '50px', 
+                        backgroundColor: colors.secondaryContainer, 
+                        borderRadius: `${getNumericPropertyValue(properties.borderRadius, 'lg', 12)}px`,
+                        border: `1px solid ${colors.outline}`
+                    }}></div>
+                </div>
+
+                {/* Border Width Example */}
+                <div className="flex flex-col items-center">
+                    <p style={{...applyTextStyle(fonts.materialTextStyles.labelSmall), marginBottom: '0.25rem'}}>Border (medium)</p>
+                    <div style={{ 
+                        width: '50px', 
+                        height: '50px', 
+                        backgroundColor: 'transparent', 
+                        borderRadius: `${getNumericPropertyValue(properties.borderRadius, 'sm', 4)}px`,
+                        border: `${getNumericPropertyValue(properties.borderWidth, 'medium', 2)}px solid ${colors.tertiary}`
+                    }}></div>
+                </div>
+                
+                {/* Opacity Example */}
+                <div className="flex flex-col items-center">
+                    <p style={{...applyTextStyle(fonts.materialTextStyles.labelSmall), marginBottom: '0.25rem'}}>Opacity (hover)</p>
+                    <div style={{ 
+                        width: '50px', 
+                        height: '50px', 
+                        backgroundColor: colors.primary, 
+                        borderRadius: `${getNumericPropertyValue(properties.borderRadius, 'xs', 2)}px`,
+                        opacity: getNumericPropertyValue(properties.opacity, 'hover', 0.8)
+                    }}></div>
+                </div>
+
+                {/* Elevation Example */}
+                 <div className="flex flex-col items-center col-span-2 sm:col-span-1">
+                    <p style={{...applyTextStyle(fonts.materialTextStyles.labelSmall), marginBottom: '0.25rem'}}>Elevation (level3)</p>
+                    <div style={{ 
+                        width: '80px', 
+                        height: '50px', 
+                        backgroundColor: colors.surfaceContainerHigh || colors.surface, 
+                        borderRadius: `${getNumericPropertyValue(properties.borderRadius, 'md', 8)}px`,
+                        boxShadow: getStringPropertyValue(properties.elevation, 'level3', '0px 4px 8px 3px rgba(0,0,0,0.15), 0px 1px 3px rgba(0,0,0,0.3)'),
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        padding: '0.5rem',
+                        textAlign: 'center'
+                    }}>
+                        <span style={applyTextStyle(fonts.materialTextStyles.bodySmall)}>Card</span>
+                    </div>
+                </div>
             </div>
         </div>
-        
-        {themeConfig.fonts.customTextStyles.length > 0 && (
-          <div>
-            <Separator style={{backgroundColor: themeConfig.colors.outlineVariant, marginBlock: '1rem'}}/>
-            <h4 style={applyTextStyle(themeConfig.fonts.materialTextStyles.titleSmall)}>Custom Text Styles:</h4>
-            {themeConfig.fonts.customTextStyles.map((custom, index) => (
-              <p key={index} style={{...applyTextStyle(custom.style), color: themeConfig.colors.onSurface, marginTop: '0.5rem'}}>
-                {custom.name}: "Themed text with custom style."
-              </p>
-            ))}
-          </div>
-        )}
 
       </CardContent>
     </Card>

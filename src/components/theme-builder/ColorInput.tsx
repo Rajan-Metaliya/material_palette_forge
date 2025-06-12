@@ -66,14 +66,15 @@ const ColorInput: React.FC<ColorInputProps> = ({
 
   return (
     <div className={cn("space-y-1.5", className)}>
-      <Label htmlFor={`${label}-hex`} className={cn("capitalize", labelClassName)}>{label.replace(/([A-Z])/g, ' $1')}</Label>
+      <Label htmlFor={`${label}-hex`} className={cn("capitalize text-sm font-medium", labelClassName)}>{label.replace(/([A-Z])/g, ' $1')}</Label>
       <div className="flex items-center space-x-2">
         <Input
           type="color"
           id={`${label}-picker`}
           value={color} // Color picker always reflects the committed valid color
           onChange={handleColorPickerChange}
-          className={cn("w-10 h-10 p-1 border-none cursor-pointer", colorPickerClassName)}
+          className={cn("w-10 h-10 p-0.5 border-none cursor-pointer rounded-md overflow-hidden", colorPickerClassName)}
+          style={{ appearance: 'none', WebkitAppearance: 'none', MozAppearance: 'none' }} // Hide default browser styling for color input
           aria-label={`${label} color picker`}
         />
         <Input
@@ -82,7 +83,7 @@ const ColorInput: React.FC<ColorInputProps> = ({
           value={inputValue}
           onChange={handleTextChange}
           onBlur={handleBlur}
-          className={cn("font-mono", inputClassName)}
+          className={cn("font-mono text-sm", inputClassName)}
           placeholder="#RRGGBB"
         />
       </div>
@@ -91,4 +92,3 @@ const ColorInput: React.FC<ColorInputProps> = ({
 };
 
 export default ColorInput;
-
