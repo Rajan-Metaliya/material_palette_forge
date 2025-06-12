@@ -14,14 +14,27 @@ import { COMMON_WEB_FONTS, FONT_WEIGHT_OPTIONS, MATERIAL_TEXT_STYLE_ORDER, MATER
 import { PlusCircle, Trash2 } from 'lucide-react';
 import { useToast } from "@/hooks/use-toast";
 
+// Helper to get the full font stack for CSS
+const getFontStack = (fontFamilyName: string): string => {
+  const font = COMMON_WEB_FONTS.find(f => f.value === fontFamilyName);
+  return font ? font.stack : fontFamilyName;
+};
+
+// Helper to convert theme fontWeight to CSS fontWeight
+const getCssFontWeight = (fontWeight: FontWeightValue): string | number => {
+  if (fontWeight === 'normal') return 400;
+  if (fontWeight === 'bold') return 700;
+  return fontWeight;
+};
+
 
 interface TextStyleEditorProps {
-  styleKey: MaterialTextStyleKey | string; // Can be a Material key or custom style name/index
+  styleKey: MaterialTextStyleKey | string;
   styleProps: TextStyleProperties;
   onPropertyChange: (propertyName: keyof TextStyleProperties, value: any) => void;
-  onNameChange?: (newName: string) => void; // Only for custom styles
+  onNameChange?: (newName: string) => void;
   isCustomStyle?: boolean;
-  styleDisplayName?: string; // For Material styles
+  styleDisplayName?: string;
 }
 
 const TextStyleEditor: React.FC<TextStyleEditorProps> = ({
@@ -33,6 +46,7 @@ const TextStyleEditor: React.FC<TextStyleEditorProps> = ({
   styleDisplayName
 }) => {
   const { toast } = useToast();
+  const { themeConfig } = useTheme(); // For preview colors
 
   const handleNameChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (onNameChange) {
@@ -52,12 +66,30 @@ const TextStyleEditor: React.FC<TextStyleEditorProps> = ({
     const numValue = parseFloat(value);
     if (!isNaN(numValue)) {
       onPropertyChange(propName, numValue);
-    } else if (value === '' && (propName === 'lineHeight')) { // Allow clearing optional lineHeight
+    } else if (value === '' && (propName === 'lineHeight')) { 
       onPropertyChange(propName, undefined);
     } else {
         toast({ title: "Invalid Input", description: `Please enter a valid number for ${propName}.`, variant: "destructive" });
     }
   };
+
+  const previewStyle: React.CSSProperties = {
+    fontFamily: getFontStack(styleProps.fontFamily),
+    fontSize: `${styleProps.fontSize}px`,
+    fontWeight: getCssFontWeight(styleProps.fontWeight),
+    letterSpacing: `${styleProps.letterSpacing}px`,
+    color: themeConfig.colors.onSurface,
+    backgroundColor: themeConfig.colors.surfaceVariant,
+    padding: '8px 12px',
+    borderRadius: '4px',
+    overflow: 'hidden',
+    textOverflow: 'ellipsis',
+    whiteSpace: 'nowrap',
+    transition: 'all 0.2s ease-out',
+  };
+  if (styleProps.lineHeight !== undefined) {
+    previewStyle.lineHeight = styleProps.lineHeight;
+  }
 
 
   return (
@@ -67,7 +99,7 @@ const TextStyleEditor: React.FC<TextStyleEditorProps> = ({
           <Label htmlFor={`${styleKey}-name`}>Custom Style Name</Label>
           <Input
             id={`${styleKey}-name`}
-            value={styleKey} // Assuming styleKey is the name for custom styles passed as prop
+            value={styleKey} 
             onChange={handleNameChange}
             placeholder="e.g., smallCaption"
           />
@@ -97,7 +129,7 @@ const TextStyleEditor: React.FC<TextStyleEditorProps> = ({
         </div>
 
         <div className="space-y-1.5">
-          <Label htmlFor={`${styleKey}-fontSize`}>Font Size (px/logical)</Label>
+          <Label htmlFor={`${styleKey}-fontSize`}>Font Size (px)</Label>
           <Input
             id={`${styleKey}-fontSize`}
             type="number"
@@ -110,7 +142,7 @@ const TextStyleEditor: React.FC<TextStyleEditorProps> = ({
         <div className="space-y-1.5">
           <Label htmlFor={`${styleKey}-fontWeight`}>Font Weight</Label>
           <Select
-            value={styleProps.fontWeight.toString()} // Ensure value is string for Select
+            value={styleProps.fontWeight.toString()} 
             onValueChange={(value) => onPropertyChange('fontWeight', FONT_WEIGHT_OPTIONS.find(opt => opt.value.toString() === value)?.value || 400)}
           >
             <SelectTrigger id={`${styleKey}-fontWeight`}>
@@ -127,7 +159,7 @@ const TextStyleEditor: React.FC<TextStyleEditorProps> = ({
         </div>
 
         <div className="space-y-1.5">
-          <Label htmlFor={`${styleKey}-letterSpacing`}>Letter Spacing (px/logical)</Label>
+          <Label htmlFor={`${styleKey}-letterSpacing`}>Letter Spacing (px)</Label>
           <Input
             id={`${styleKey}-letterSpacing`}
             type="number"
@@ -149,6 +181,12 @@ const TextStyleEditor: React.FC<TextStyleEditorProps> = ({
             placeholder="e.g., 1.5"
           />
         </div>
+      </div>
+      <div className="mt-4 pt-3 border-t">
+        <Label className="text-xs text-muted-foreground mb-1 block">Preview:</Label>
+        <p style={previewStyle}>
+          The quick brown fox
+        </p>
       </div>
     </Card>
   );
@@ -199,7 +237,7 @@ const FontsSection: React.FC = () => {
           {themeConfig.fonts.customTextStyles.map((customStyle, index) => (
             <div key={index} className="relative">
               <TextStyleEditor
-                styleKey={customStyle.name} // Pass name as styleKey for custom editor
+                styleKey={customStyle.name} 
                 styleProps={customStyle.style}
                 onPropertyChange={(propName, value) => updateCustomTextStyleProperty(index, propName, value)}
                 onNameChange={(newName) => updateCustomTextStyleName(index, newName)}
