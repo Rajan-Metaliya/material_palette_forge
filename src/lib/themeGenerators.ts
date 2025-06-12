@@ -1,99 +1,522 @@
-import type { ThemeConfiguration, MaterialColors, ThemeGradient } from '@/types/theme';
+
+import type { ThemeConfiguration, MaterialColors, ThemeGradient, ThemeSpacing, ThemeBorderRadius, ThemeBorderWidth, ThemeOpacity, ThemeElevation } from '@/types/theme';
+import { commonJs } from 'node:stream/consumers';
 
 function toFlutterColor(hex: string): string {
   return `Color(0xFF${hex.substring(1).toUpperCase()})`;
 }
 
-const formatKeyForDisplay = (key: string) => {
-  return key.replace(/([A-Z])/g, ' $1').replace(/^./, str => str.toUpperCase());
+function parseUnitValue(value: string): number {
+  const parsed = parseFloat(value);
+  return isNaN(parsed) ? 0.0 : parsed;
 }
+
 
 export function generateFlutterCode(theme: ThemeConfiguration): string {
   const colors = theme.colors;
   const fonts = theme.fonts;
-  // Properties are not directly mapped in this simplified Flutter theme, but could be used for custom widgets.
+  const properties = theme.properties;
 
   let colorSchemeEntries = '';
   for (const key in colors) {
     if (Object.prototype.hasOwnProperty.call(colors, key)) {
       const colorKey = key as keyof MaterialColors;
-      // Skip seedColor for manual definition
-      if (colorKey === 'primary') { // Use primary as seed for fromSeed, then override
+      if (colorKey === 'primary') {
          colorSchemeEntries += `    seedColor: ${toFlutterColor(colors[colorKey])},\n`;
       }
       colorSchemeEntries += `    ${colorKey}: ${toFlutterColor(colors[colorKey])},\n`;
     }
   }
 
+  const spacingExtensionProps = (Object.keys(properties.spacing) as Array<keyof ThemeSpacing>)
+    .map(key => `  final double ${key};`).join('\n');
+  const spacingExtensionConstructorArgs = (Object.keys(properties.spacing)as Array<keyof ThemeSpacing>)
+    .map(key => `    required this.${key},`).join('\n');
+  const spacingExtensionCopyWithArgs = (Object.keys(properties.spacing) as Array<keyof ThemeSpacing>)
+    .map(key => `double? ${key},`).join('');
+  const spacingExtensionCopyWithReturn = (Object.keys(properties.spacing) as Array<keyof ThemeSpacing>)
+    .map(key => `      ${key}: ${key} ?? this.${key},`).join('\n');
+  const spacingExtensionLerp = (Object.keys(properties.spacing) as Array<keyof ThemeSpacing>)
+    .map(key => `      ${key}: lerpDouble(this.${key}, other.${key}, t)!,`).join('\n');
+  const spacingInstanceArgs = (Object.keys(properties.spacing) as Array<keyof ThemeSpacing>)
+    .map(key => `      ${key}: ${parseUnitValue(properties.spacing[key])},`).join('\n');
+
+  const borderRadiusExtensionProps = (Object.keys(properties.borderRadius) as Array<keyof ThemeBorderRadius>)
+    .map(key => `  final double ${key};`).join('\n');
+  const borderRadiusExtensionConstructorArgs = (Object.keys(properties.borderRadius) as Array<keyof ThemeBorderRadius>)
+    .map(key => `    required this.${key},`).join('\n');
+  const borderRadiusExtensionCopyWithArgs = (Object.keys(properties.borderRadius)as Array<keyof ThemeBorderRadius>)
+    .map(key => `double? ${key},`).join('');
+  const borderRadiusExtensionCopyWithReturn = (Object.keys(properties.borderRadius)as Array<keyof ThemeBorderRadius>)
+    .map(key => `      ${key}: ${key} ?? this.${key},`).join('\n');
+  const borderRadiusExtensionLerp = (Object.keys(properties.borderRadius)as Array<keyof ThemeBorderRadius>)
+    .map(key => `      ${key}: lerpDouble(this.${key}, other.${key}, t)!,`).join('\n');
+  const borderRadiusInstanceArgs = (Object.keys(properties.borderRadius)as Array<keyof ThemeBorderRadius>)
+    .map(key => `      ${key}: ${parseUnitValue(properties.borderRadius[key])},`).join('\n');
+
+  const borderWidthExtensionProps = (Object.keys(properties.borderWidth) as Array<keyof ThemeBorderWidth>)
+    .map(key => `  final double ${key};`).join('\n');
+  const borderWidthExtensionConstructorArgs = (Object.keys(properties.borderWidth) as Array<keyof ThemeBorderWidth>)
+    .map(key => `    required this.${key},`).join('\n');
+  const borderWidthExtensionCopyWithArgs = (Object.keys(properties.borderWidth) as Array<keyof ThemeBorderWidth>)
+    .map(key => `double? ${key},`).join('');
+  const borderWidthExtensionCopyWithReturn = (Object.keys(properties.borderWidth) as Array<keyof ThemeBorderWidth>)
+    .map(key => `      ${key}: ${key} ?? this.${key},`).join('\n');
+  const borderWidthExtensionLerp = (Object.keys(properties.borderWidth) as Array<keyof ThemeBorderWidth>)
+    .map(key => `      ${key}: lerpDouble(this.${key}, other.${key}, t)!,`).join('\n');
+  const borderWidthInstanceArgs = (Object.keys(properties.borderWidth) as Array<keyof ThemeBorderWidth>)
+    .map(key => `      ${key}: ${parseUnitValue(properties.borderWidth[key])},`).join('\n');
+
+  const opacityExtensionProps = (Object.keys(properties.opacity) as Array<keyof ThemeOpacity>)
+    .map(key => `  final double ${key};`).join('\n');
+  const opacityExtensionConstructorArgs = (Object.keys(properties.opacity) as Array<keyof ThemeOpacity>)
+    .map(key => `    required this.${key},`).join('\n');
+  const opacityExtensionCopyWithArgs = (Object.keys(properties.opacity) as Array<keyof ThemeOpacity>)
+    .map(key => `double? ${key},`).join('');
+  const opacityExtensionCopyWithReturn = (Object.keys(properties.opacity) as Array<keyof ThemeOpacity>)
+    .map(key => `      ${key}: ${key} ?? this.${key},`).join('\n');
+  const opacityExtensionLerp = (Object.keys(properties.opacity) as Array<keyof ThemeOpacity>)
+    .map(key => `      ${key}: lerpDouble(this.${key}, other.${key}, t)!,`).join('\n');
+  const opacityInstanceArgs = (Object.keys(properties.opacity) as Array<keyof ThemeOpacity>)
+    .map(key => `      ${key}: ${properties.opacity[key]},`).join('\n');
+
+  const elevationExtensionProps = (Object.keys(properties.elevation) as Array<keyof ThemeElevation>)
+    .map(key => `  final String ${key};`).join('\n');
+  const elevationExtensionConstructorArgs = (Object.keys(properties.elevation) as Array<keyof ThemeElevation>)
+    .map(key => `    required this.${key},`).join('\n');
+  const elevationExtensionCopyWithArgs = (Object.keys(properties.elevation) as Array<keyof ThemeElevation>)
+    .map(key => `String? ${key},`).join('');
+  const elevationExtensionCopyWithReturn = (Object.keys(properties.elevation) as Array<keyof ThemeElevation>)
+    .map(key => `      ${key}: ${key} ?? this.${key},`).join('\n');
+  const elevationExtensionLerp = (Object.keys(properties.elevation) as Array<keyof ThemeElevation>)
+    .map(key => `      ${key}: other.${key}, // String lerp can be simplified or made more complex`).join('\n'); // Simplified lerp for strings
+  const elevationInstanceArgs = (Object.keys(properties.elevation) as Array<keyof ThemeElevation>)
+    .map(key => `      ${key}: '${properties.elevation[key].replace(/'/g, "\\'")}',`).join('\n');
+
+
+  const gradientDataInstances = properties.gradients.map(g => {
+    const colorsList = g.colors.map(c => toFlutterColor(c)).join(', ');
+    return `    AppGradientData(
+      name: '${g.name.replace(/'/g, "\\'")}',
+      type: '${g.type}',
+      direction: ${g.direction ? `'${g.direction.replace(/'/g, "\\'")}'` : 'null'},
+      shape: ${g.shape ? `'${g.shape.replace(/'/g, "\\'")}'` : 'null'},
+      extent: ${g.extent ? `'${g.extent.replace(/'/g, "\\'")}'` : 'null'},
+      colors: [${colorsList}],
+    )`;
+  }).join(',\n');
+
+
   return `// lib/theme/app_theme.dart
 import 'package:flutter/material.dart';
+import 'dart:ui' show lerpDouble; // For lerpDouble
 
 // Generated by Material Palette Forge
-// Font families:
-// Primary: ${fonts.primary}
-// Secondary: ${fonts.secondary}
-// Monospace: ${fonts.monospace}
-
-// Theme Properties (for reference or custom widgets):
-// Spacing:
-${Object.entries(theme.properties.spacing).map(([key, value]) => `//   ${formatKeyForDisplay(key)}: ${value}`).join('\n')}
-// Border Radius:
-${Object.entries(theme.properties.borderRadius).map(([key, value]) => `//   ${formatKeyForDisplay(key)}: ${value}`).join('\n')}
-// Border Width:
-${Object.entries(theme.properties.borderWidth).map(([key, value]) => `//   ${formatKeyForDisplay(key)}: ${value}`).join('\n')}
-// Opacity:
-${Object.entries(theme.properties.opacity).map(([key, value]) => `//   ${formatKeyForDisplay(key)}: ${value}`).join('\n')}
-// Elevation:
-${Object.entries(theme.properties.elevation).map(([key, value]) => `//   ${formatKeyForDisplay(key)}: ${value}`).join('\n')}
-// Gradients:
-${theme.properties.gradients.map((g, i) => `//   Gradient ${i + 1} (${g.name}): ${g.type}, ${g.direction || ''}, [${g.colors.join(', ')}]`).join('\n')}
+//
+// How to use custom extensions:
+// final appSpacing = Theme.of(context).extension<AppSpacing>();
+// double padding = appSpacing!.md;
+//
+// final appGradients = Theme.of(context).extension<AppGradients>();
+// final primaryGradient = appGradients!.gradients.firstWhere((g) => g.name == 'Primary to Secondary');
 
 
+// --- Custom Theme Extensions ---
+
+// Spacing Extension
+@immutable
+class AppSpacing extends ThemeExtension<AppSpacing> {
+  const AppSpacing({
+${spacingExtensionConstructorArgs}
+  });
+
+${spacingExtensionProps}
+
+  @override
+  AppSpacing copyWith({
+    ${spacingExtensionCopyWithArgs}
+  }) {
+    return AppSpacing(
+${spacingExtensionCopyWithReturn}
+    );
+  }
+
+  @override
+  AppSpacing lerp(ThemeExtension<AppSpacing>? other, double t) {
+    if (other is! AppSpacing) {
+      return this;
+    }
+    return AppSpacing(
+${spacingExtensionLerp}
+    );
+  }
+}
+
+// Border Radius Extension
+@immutable
+class AppBorderRadius extends ThemeExtension<AppBorderRadius> {
+  const AppBorderRadius({
+${borderRadiusExtensionConstructorArgs}
+  });
+
+${borderRadiusExtensionProps}
+
+  @override
+  AppBorderRadius copyWith({
+    ${borderRadiusExtensionCopyWithArgs}
+  }) {
+    return AppBorderRadius(
+${borderRadiusExtensionCopyWithReturn}
+    );
+  }
+
+  @override
+  AppBorderRadius lerp(ThemeExtension<AppBorderRadius>? other, double t) {
+    if (other is! AppBorderRadius) {
+      return this;
+    }
+    return AppBorderRadius(
+${borderRadiusExtensionLerp}
+    );
+  }
+}
+
+// Border Width Extension
+@immutable
+class AppBorderWidth extends ThemeExtension<AppBorderWidth> {
+  const AppBorderWidth({
+${borderWidthExtensionConstructorArgs}
+  });
+
+${borderWidthExtensionProps}
+
+  @override
+  AppBorderWidth copyWith({
+    ${borderWidthExtensionCopyWithArgs}
+  }) {
+    return AppBorderWidth(
+${borderWidthExtensionCopyWithReturn}
+    );
+  }
+
+  @override
+  AppBorderWidth lerp(ThemeExtension<AppBorderWidth>? other, double t) {
+    if (other is! AppBorderWidth) {
+      return this;
+    }
+    return AppBorderWidth(
+${borderWidthExtensionLerp}
+    );
+  }
+}
+
+// Opacity Extension
+@immutable
+class AppOpacity extends ThemeExtension<AppOpacity> {
+  const AppOpacity({
+${opacityExtensionConstructorArgs}
+  });
+
+${opacityExtensionProps}
+
+  @override
+  AppOpacity copyWith({
+    ${opacityExtensionCopyWithArgs}
+  }) {
+    return AppOpacity(
+${opacityExtensionCopyWithReturn}
+    );
+  }
+
+  @override
+  AppOpacity lerp(ThemeExtension<AppOpacity>? other, double t) {
+    if (other is! AppOpacity) {
+      return this;
+    }
+    return AppOpacity(
+${opacityExtensionLerp}
+    );
+  }
+}
+
+// Elevation Extension
+@immutable
+class AppElevation extends ThemeExtension<AppElevation> {
+  const AppElevation({
+${elevationExtensionConstructorArgs}
+  });
+
+${elevationExtensionProps}
+
+  @override
+  AppElevation copyWith({
+    ${elevationExtensionCopyWithArgs}
+  }) {
+    return AppElevation(
+${elevationExtensionCopyWithReturn}
+    );
+  }
+
+  @override
+  AppElevation lerp(ThemeExtension<AppElevation>? other, double t) {
+    if (other is! AppElevation) {
+      return this;
+    }
+    // For strings, lerp might be just taking one or the other based on t
+    // Or, implement a more complex string interpolation if needed.
+    // Here, we simplify: if t > 0.5, take 'other', else 'this'.
+    // However, for multiple properties, it's better to just return 'other' for simplicity in generated code.
+    return AppElevation(
+${elevationExtensionLerp}
+    );
+  }
+}
+
+// Gradient Data Holder
+@immutable
+class AppGradientData {
+  const AppGradientData({
+    required this.name,
+    required this.type,
+    this.direction,
+    this.shape,
+    this.extent,
+    required this.colors,
+  });
+
+  final String name;
+  final String type; // 'linear' or 'radial'
+  final String? direction; // For linear, e.g., 'to right', '45deg'
+  final String? shape; // For radial, e.g., 'circle'
+  final String? extent; // For radial, e.g., 'farthest-corner'
+  final List<Color> colors;
+
+  // Helper to get a Flutter Gradient object
+  Gradient? toGradient() {
+    if (type == 'linear') {
+      // Basic parsing for direction. More robust parsing might be needed.
+      Alignment begin = Alignment.centerLeft;
+      Alignment end = Alignment.centerRight;
+      double? angle;
+
+      if (direction != null) {
+        if (direction!.contains('deg')) {
+            angle = (parseUnitValue(direction!) * 3.1415926535 / 180); // to radians
+        } else {
+            // Simplified: 'to right', 'to left', 'to top', 'to bottom'
+            // 'to top left', etc. would require more complex parsing
+            if (direction == 'to right') { begin = Alignment.centerLeft; end = Alignment.centerRight; }
+            else if (direction == 'to left') { begin = Alignment.centerRight; end = Alignment.centerLeft; }
+            else if (direction == 'to top') { begin = Alignment.bottomCenter; end = Alignment.topCenter; }
+            else if (direction == 'to bottom') { begin = Alignment.topCenter; end = Alignment.bottomCenter; }
+            // Add more cases as needed for diagonal gradients
+        }
+      }
+      
+      return angle != null
+        ? LinearGradient(colors: colors, transform: GradientRotation(angle))
+        : LinearGradient(colors: colors, begin: begin, end: end);
+
+    } else if (type == 'radial') {
+      // Basic parsing for shape & extent
+      TileMode tileMode = TileMode.clamp; // Default
+      Alignment center = Alignment.center; // Default
+      double radius = 0.5; // Default for 'circle'
+
+      // Note: Flutter's RadialGradient is quite different from CSS radial gradients.
+      // 'extent' like 'farthest-corner' is complex to map directly.
+      // This is a very simplified version.
+      
+      // Example of 'shape' mapping
+      // if (shape == 'ellipse') { /* Use different defaults or logic */ }
+
+      return RadialGradient(
+        colors: colors,
+        center: center,
+        radius: radius,
+        // tileMode: tileMode, // If needed
+        // focal: focal, // If needed
+        // focalRadius: focalRadius, // If needed
+      );
+    }
+    return null;
+  }
+}
+
+// Gradients Extension
+@immutable
+class AppGradients extends ThemeExtension<AppGradients> {
+  const AppGradients({
+    required this.gradients,
+  });
+
+  final List<AppGradientData> gradients;
+
+  @override
+  AppGradients copyWith({
+    List<AppGradientData>? gradients,
+  }) {
+    return AppGradients(
+      gradients: gradients ?? this.gradients,
+    );
+  }
+
+  @override
+  AppGradients lerp(ThemeExtension<AppGradients>? other, double t) {
+    if (other is! AppGradients) {
+      return this;
+    }
+    // Lerping lists of complex objects can be involved.
+    // Simplification: return 'other' if t > 0.5, else 'this'.
+    return t < 0.5 ? this : other;
+  }
+}
+
+
+// --- Main AppTheme Class ---
 class AppTheme {
   static ThemeData get lightTheme {
+    final colorScheme = ColorScheme.fromSeed(
+${colorSchemeEntries.trimEnd()}
+    );
+
+    final textTheme = TextTheme(
+      displayLarge: TextStyle(fontFamily: '${fonts.primary}'),
+      displayMedium: TextStyle(fontFamily: '${fonts.primary}'),
+      displaySmall: TextStyle(fontFamily: '${fonts.primary}'),
+      headlineLarge: TextStyle(fontFamily: '${fonts.primary}'),
+      headlineMedium: TextStyle(fontFamily: '${fonts.primary}'),
+      headlineSmall: TextStyle(fontFamily: '${fonts.primary}'),
+      titleLarge: TextStyle(fontFamily: '${fonts.primary}'),
+      titleMedium: TextStyle(fontFamily: '${fonts.secondary}'),
+      titleSmall: TextStyle(fontFamily: '${fonts.secondary}'),
+      bodyLarge: TextStyle(fontFamily: '${fonts.secondary}'),
+      bodyMedium: TextStyle(fontFamily: '${fonts.secondary}'),
+      bodySmall: TextStyle(fontFamily: '${fonts.secondary}'),
+      labelLarge: TextStyle(fontFamily: '${fonts.secondary}', fontWeight: FontWeight.w500),
+      labelMedium: TextStyle(fontFamily: '${fonts.secondary}', fontWeight: FontWeight.w500),
+      labelSmall: TextStyle(fontFamily: '${fonts.secondary}', fontWeight: FontWeight.w500),
+    ).apply(
+      bodyColor: colorScheme.onSurface,
+      displayColor: colorScheme.onSurface,
+    );
+    
+    final appSpacing = AppSpacing(
+${spacingInstanceArgs}
+    );
+
+    final appBorderRadius = AppBorderRadius(
+${borderRadiusInstanceArgs}
+    );
+
+    final appBorderWidth = AppBorderWidth(
+${borderWidthInstanceArgs}
+    );
+
+    final appOpacity = AppOpacity(
+${opacityInstanceArgs}
+    );
+
+    final appElevation = AppElevation(
+${elevationInstanceArgs}
+    );
+    
+    final appGradients = AppGradients(
+      gradients: [
+${gradientDataInstances}
+      ],
+    );
+
     return ThemeData(
       useMaterial3: true,
-      colorScheme: ColorScheme.fromSeed(
-${colorSchemeEntries.trimEnd()}
+      colorScheme: colorScheme,
+      textTheme: textTheme,
+      extensions: <ThemeExtension<dynamic>>[
+        appSpacing,
+        appBorderRadius,
+        appBorderWidth,
+        appOpacity,
+        appElevation,
+        appGradients,
+      ],
+      // Example of applying a default border radius from custom extension
+      cardTheme: CardTheme(
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(appBorderRadius.md),
+        ),
+        elevation: parseUnitValue(appElevation.level1.split(' ')[1]), // Approx from first shadow value
+        color: colorScheme.surfaceVariant, // M3 like card color
+        surfaceTintColor: colorScheme.surfaceTint, // M3 elevation tint
       ),
-      textTheme: TextTheme(
-        // Example mapping, adjust as needed for your app's typography scale
-        displayLarge: TextStyle(fontFamily: '${fonts.primary}'),
-        displayMedium: TextStyle(fontFamily: '${fonts.primary}'),
-        displaySmall: TextStyle(fontFamily: '${fonts.primary}'),
-        headlineLarge: TextStyle(fontFamily: '${fonts.primary}'),
-        headlineMedium: TextStyle(fontFamily: '${fonts.primary}'),
-        headlineSmall: TextStyle(fontFamily: '${fonts.primary}'),
-        titleLarge: TextStyle(fontFamily: '${fonts.primary}'),
-        titleMedium: TextStyle(fontFamily: '${fonts.secondary}'),
-        titleSmall: TextStyle(fontFamily: '${fonts.secondary}'),
-        bodyLarge: TextStyle(fontFamily: '${fonts.secondary}'),
-        bodyMedium: TextStyle(fontFamily: '${fonts.secondary}'),
-        bodySmall: TextStyle(fontFamily: '${fonts.secondary}'),
-        labelLarge: TextStyle(fontFamily: '${fonts.secondary}'),
-        labelMedium: TextStyle(fontFamily: '${fonts.secondary}'),
-        labelSmall: TextStyle(fontFamily: '${fonts.secondary}'),
+      buttonTheme: ButtonThemeData(
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(appBorderRadius.full), // M3 like button radius
+        ),
       ),
-      // Example of applying a default border radius (using properties.borderRadius.md)
-      // cardTheme: CardTheme(
-      //   shape: RoundedRectangleBorder(
-      //     borderRadius: BorderRadius.circular(${parseFloat(theme.properties.borderRadius.md)}),
-      //   ),
-      //   elevation: ${parseFloat(theme.properties.elevation.level1.split(' ')[0]) || 1}, // Approx
-      // ),
-      // buttonTheme: ButtonThemeData(
-      //   shape: RoundedRectangleBorder(
-      //     borderRadius: BorderRadius.circular(${parseFloat(theme.properties.borderRadius.sm)}),
-      //   ),
-      // ),
+      filledButtonTheme: FilledButtonThemeData(
+        style: FilledButton.styleFrom(
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(appBorderRadius.full),
+            ),
+            padding: EdgeInsets.symmetric(horizontal: appSpacing.lg, vertical: appSpacing.md),
+        )
+      ),
+      outlinedButtonTheme: OutlinedButtonThemeData(
+         style: OutlinedButton.styleFrom(
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(appBorderRadius.full),
+            ),
+             padding: EdgeInsets.symmetric(horizontal: appSpacing.lg, vertical: appSpacing.md),
+        )
+      ),
+      textButtonTheme: TextButtonThemeData(
+         style: TextButton.styleFrom(
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(appBorderRadius.full),
+            ),
+             padding: EdgeInsets.symmetric(horizontal: appSpacing.lg, vertical: appSpacing.md),
+        )
+      ),
+      inputDecorationTheme: InputDecorationTheme(
+        border: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(appBorderRadius.sm),
+            borderSide: BorderSide(color: colorScheme.outline),
+        ),
+        enabledBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(appBorderRadius.sm),
+            borderSide: BorderSide(color: colorScheme.outline),
+        ),
+        focusedBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(appBorderRadius.sm),
+            borderSide: BorderSide(color: colorScheme.primary, width: appBorderWidth.medium),
+        ),
+        filled: true,
+        fillColor: colorScheme.surfaceContainerHighest, // M3 like text field fill
+      ),
+      dialogTheme: DialogTheme(
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(appBorderRadius.lg),
+        ),
+        backgroundColor: colorScheme.surfaceContainerHigh,
+      ),
+      chipTheme: ChipThemeData(
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(appBorderRadius.md),
+        ),
+        backgroundColor: colorScheme.secondaryContainer,
+        labelStyle: textTheme.labelLarge?.copyWith(color: colorScheme.onSecondaryContainer),
+        padding: EdgeInsets.symmetric(horizontal: appSpacing.md),
+      )
+      // Add more component themes as needed, utilizing your custom extensions
     );
   }
 
   // Optional: Define a darkTheme similarly if needed
-  // static ThemeData get darkTheme { ... }
+  // static ThemeData get darkTheme { ... return lightTheme.copyWith(brightness: Brightness.dark, ...); }
 }
 `;
 }
+
 
 export function generateJson(theme: ThemeConfiguration): string {
   // Convert theme object to the specified JSON structure
@@ -123,12 +546,13 @@ export function generateJson(theme: ThemeConfiguration): string {
         inverseSurface: theme.colors.inverseSurface,
         onInverseSurface: theme.colors.onInverseSurface,
         inversePrimary: theme.colors.inversePrimary,
+        // seedColor is intentionally not in output JSON by default
       }
     },
     fonts: {
       primary: theme.fonts.primary,
       secondary: theme.fonts.secondary,
-      extended: { // Example of extended, maps to monospace for simplicity
+      extended: { 
         monospace: theme.fonts.monospace,
       }
     },
@@ -139,70 +563,72 @@ export function generateJson(theme: ThemeConfiguration): string {
 
 export function generateFigmaTokens(theme: ThemeConfiguration): string {
   const figmaTokens: any = {
-    color: {},
-    fontFamily: {},
-    spacing: {},
-    borderRadius: {},
-    borderWidth: {},
-    opacity: {},
-    boxShadow: {}, // For elevation
-    gradient: {},
+    global: { // Using a "global" top-level key as often seen in token structures
+      color: {},
+      fontFamily: {},
+      spacing: {},
+      borderRadius: {},
+      borderWidth: {},
+      opacity: {},
+      boxShadow: {}, 
+      gradient: {},
+    }
   };
 
-  // Colors
+  const colorsTarget = figmaTokens.global.color;
   for (const key in theme.colors) {
+    if (key === 'seedColor') continue; // Do not export seedColor to tokens
     if (Object.prototype.hasOwnProperty.call(theme.colors, key)) {
-      figmaTokens.color[key] = { value: theme.colors[key as keyof MaterialColors], type: "color" };
+      colorsTarget[key] = { value: theme.colors[key as keyof MaterialColors], type: "color" };
     }
   }
-
-  // Fonts
-  figmaTokens.fontFamily.primary = { value: theme.fonts.primary, type: "fontFamily" };
-  figmaTokens.fontFamily.secondary = { value: theme.fonts.secondary, type: "fontFamily" };
-  figmaTokens.fontFamily.monospace = { value: theme.fonts.monospace, type: "fontFamily" };
   
-  // Spacing
+  const fontsTarget = figmaTokens.global.fontFamily;
+  fontsTarget.primary = { value: theme.fonts.primary, type: "fontFamily" };
+  fontsTarget.secondary = { value: theme.fonts.secondary, type: "fontFamily" };
+  fontsTarget.monospace = { value: theme.fonts.monospace, type: "fontFamily" };
+  
+  const spacingTarget = figmaTokens.global.spacing;
   for (const key in theme.properties.spacing) {
-    figmaTokens.spacing[key] = { value: theme.properties.spacing[key as keyof typeof theme.properties.spacing], type: "spacing" };
+    spacingTarget[key] = { value: theme.properties.spacing[key as keyof typeof theme.properties.spacing], type: "spacing" };
   }
 
-  // Border Radius
+  const borderRadiusTarget = figmaTokens.global.borderRadius;
   for (const key in theme.properties.borderRadius) {
-    figmaTokens.borderRadius[key] = { value: theme.properties.borderRadius[key as keyof typeof theme.properties.borderRadius], type: "borderRadius" };
+    borderRadiusTarget[key] = { value: theme.properties.borderRadius[key as keyof typeof theme.properties.borderRadius], type: "borderRadius" };
   }
   
-  // Border Width
+  const borderWidthTarget = figmaTokens.global.borderWidth;
   for (const key in theme.properties.borderWidth) {
-    figmaTokens.borderWidth[key] = { value: theme.properties.borderWidth[key as keyof typeof theme.properties.borderWidth], type: "borderWidth" }; // Or "dimension"
+    borderWidthTarget[key] = { value: theme.properties.borderWidth[key as keyof typeof theme.properties.borderWidth], type: "borderWidth" };
   }
   
-  // Opacity
+  const opacityTarget = figmaTokens.global.opacity;
   for (const key in theme.properties.opacity) {
-    figmaTokens.opacity[key] = { value: theme.properties.opacity[key as keyof typeof theme.properties.opacity].toString(), type: "opacity" }; // string for figma tokens
+    opacityTarget[key] = { value: theme.properties.opacity[key as keyof typeof theme.properties.opacity].toString(), type: "opacity" };
   }
   
-  // Elevation (as boxShadow)
+  const elevationTarget = figmaTokens.global.boxShadow; // Figma uses boxShadow for elevation
   for (const key in theme.properties.elevation) {
-    const levelKey = key.replace('level', '');
-    figmaTokens.boxShadow[levelKey] = { value: theme.properties.elevation[key as keyof typeof theme.properties.elevation], type: "boxShadow" };
+    const levelKey = key.replace('level', ''); // e.g. level1 -> 1
+    elevationTarget[levelKey] = { value: theme.properties.elevation[key as keyof typeof theme.properties.elevation], type: "boxShadow" };
   }
 
-  // Gradients
+  const gradientTarget = figmaTokens.global.gradient;
   theme.properties.gradients.forEach((gradient: ThemeGradient, index: number) => {
-    // Figma gradient syntax can be complex. This is a simplified linear gradient representation.
-    // Example: "linear-gradient(to right, #ff0000, #00ff00)"
     const colorsString = gradient.colors.join(', ');
     let figmaGradientValue = '';
     if (gradient.type === 'linear') {
         figmaGradientValue = `linear-gradient(${gradient.direction || 'to right'}, ${colorsString})`;
     } else if (gradient.type === 'radial') {
-        // Basic radial gradient, more properties might be needed for full control
         figmaGradientValue = `radial-gradient(${gradient.shape || 'circle'} ${gradient.extent || 'farthest-corner'}, ${colorsString})`;
     }
     
-    figmaTokens.gradient[gradient.name.replace(/\s+/g, '-').toLowerCase() || `gradient-${index + 1}`] = {
+    // Sanitize name for token key: lowercase, replace spaces with hyphens
+    const tokenName = gradient.name.replace(/\s+/g, '-').toLowerCase() || `gradient-${index + 1}`;
+    gradientTarget[tokenName] = {
       value: figmaGradientValue,
-      type: "gradient" // Custom type or rely on string interpretation
+      type: "other" // "gradient" is not a standard type, "other" or string type can be used
     };
   });
 
