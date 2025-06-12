@@ -1,4 +1,5 @@
 
+
 "use client";
 
 import type { ReactNode } from 'react';
@@ -16,7 +17,7 @@ import type {
   TextStyleProperties,
   FontWeightValue
 } from '@/types/theme';
-import { INITIAL_THEME_CONFIG, DEFAULT_MATERIAL_TEXT_STYLES, DEFAULT_COLORS } from '@/lib/consts';
+import { INITIAL_THEME_CONFIG, DEFAULT_MATERIAL_TEXT_STYLES, DEFAULT_COLORS, DEFAULT_FONTS } from '@/lib/consts';
 import { generateMaterialColorsFromSeed, hexToHsl } from '@/lib/colorUtils';
 
 type PropertyGroupKey = keyof Pick<ThemeProperties, 'spacing' | 'borderRadius' | 'borderWidth' | 'opacity' | 'elevation'>;
@@ -36,14 +37,16 @@ interface ThemeContextType {
   updateMaterialTextStyle: (
     styleName: MaterialTextStyleKey,
     propertyName: keyof TextStyleProperties,
-    value: string | number | FontWeightValue
+    value: string | number | FontWeightValue | ColorModeValues | undefined,
+    colorMode?: ColorMode
   ) => void;
   addCustomTextStyle: (name?: string) => void;
   updateCustomTextStyleName: (index: number, newName: string) => void;
   updateCustomTextStyleProperty: (
     index: number,
     propertyName: keyof TextStyleProperties,
-    value: string | number | FontWeightValue
+    value: string | number | FontWeightValue | ColorModeValues | undefined,
+    colorMode?: ColorMode
   ) => void;
   removeCustomTextStyle: (index: number) => void;
 
@@ -70,12 +73,6 @@ interface ThemeContextType {
 
 const ThemeContext = createContext<ThemeContextType | undefined>(undefined);
 
-// Helper function to map your color role names to CSS variable base names
-// (e.g., primaryContainer -> primary-container)
-const colorRoleToCssVarBase = (role: string): string => {
-  return role.replace(/([A-Z])/g, '-$1').toLowerCase();
-};
-
 export const ThemeProvider = ({ children }: { children: ReactNode }) => {
   const [activeMode, setActiveMode] = useState<ColorMode>('light');
   
@@ -85,8 +82,8 @@ export const ThemeProvider = ({ children }: { children: ReactNode }) => {
     return {
       ...INITIAL_THEME_CONFIG,
       colors: {
-        ...INITIAL_THEME_CONFIG.colors, // This includes background, foreground, accent from consts
-        ...generatedM3Colors, // This overwrites M3 roles like primary, secondary, etc.
+        ...INITIAL_THEME_CONFIG.colors, 
+        ...generatedM3Colors, 
         seedColor: initialSeed,
       },
       fonts: JSON.parse(JSON.stringify(INITIAL_THEME_CONFIG.fonts)),
@@ -113,26 +110,24 @@ export const ThemeProvider = ({ children }: { children: ReactNode }) => {
       root.classList.remove('dark');
     }
 
-    // Update CSS HSL variables
-    // For ShadCN/Tailwind CSS variables like --primary, --background, etc.
     const shadcnColorMap: Record<string, MaterialColorRole | undefined> = {
-      'primary': 'primary', 'primary-foreground': 'onPrimaryContainer', // Adjusted based on typical contrast needs
+      'primary': 'primary', 'primary-foreground': 'onPrimaryContainer', 
       'secondary': 'secondary', 'secondary-foreground': 'onSecondaryContainer',
-      'background': 'background', 'foreground': 'onSurface', // Map general background/foreground
-      'card': 'surfaceVariant', 'card-foreground': 'onSurfaceVariant', // Example mapping for card
-      'popover': 'surface', 'popover-foreground': 'onSurface', // Example mapping for popover
-      'muted': 'surfaceVariant', 'muted-foreground': 'onSurfaceVariant', // Muted often maps to variants
-      'accent': 'accent', 'accent-foreground': 'onPrimary', // Accent foreground might be onPrimary or similar high contrast
+      'background': 'background', 'foreground': 'onSurface', 
+      'card': 'surfaceVariant', 'card-foreground': 'onSurfaceVariant', 
+      'popover': 'surface', 'popover-foreground': 'onSurface', 
+      'muted': 'surfaceVariant', 'muted-foreground': 'onSurfaceVariant', 
+      'accent': 'accent', 'accent-foreground': 'onPrimary', 
       'destructive': 'error', 'destructive-foreground': 'onErrorContainer',
       'border': 'outline',
-      'input': 'surfaceVariant', // Input background
-      'ring': 'primary', // Ring color often primary
+      'input': 'surfaceVariant', 
+      'ring': 'primary', 
     };
     
     (Object.keys(shadcnColorMap) as (keyof typeof shadcnColorMap)[]).forEach(cssVarBase => {
       const roleName = shadcnColorMap[cssVarBase];
       if (roleName && themeConfig.colors[roleName]) {
-        const colorSpec = themeConfig.colors[roleName] as ColorModeValues | undefined; // Ensure this is ColorModeValues
+        const colorSpec = themeConfig.colors[roleName] as ColorModeValues | undefined; 
         if (colorSpec && typeof colorSpec === 'object' && 'light' in colorSpec && 'dark' in colorSpec) {
           const lightHsl = hexToHsl(colorSpec.light);
           const darkHsl = hexToHsl(colorSpec.dark);
@@ -160,7 +155,6 @@ export const ThemeProvider = ({ children }: { children: ReactNode }) => {
       const currentColorSpec = newColors[colorName];
 
       if (currentColorSpec && typeof currentColorSpec === 'object' && 'light' in currentColorSpec && 'dark' in currentColorSpec) {
-         // Create a new object for the specific color role to ensure re-render
         newColors[colorName] = {
           ...currentColorSpec,
           [mode]: value,
@@ -176,7 +170,7 @@ export const ThemeProvider = ({ children }: { children: ReactNode }) => {
       return {
         ...prevConfig,
         colors: {
-          ...prevConfig.colors, // Retain existing background, foreground, accent unless they are also M3 generated
+          ...prevConfig.colors, 
           ...generatedM3Colors,
           seedColor: seedValue,
         },
@@ -185,20 +179,34 @@ export const ThemeProvider = ({ children }: { children: ReactNode }) => {
   }, [updateThemeConfigState]);
 
   const updateMaterialTextStyle = useCallback(
-    (styleName: MaterialTextStyleKey, propertyName: keyof TextStyleProperties, value: string | number | FontWeightValue) => {
-      updateThemeConfigState(prevConfig => ({
-        ...prevConfig,
-        fonts: {
-          ...prevConfig.fonts,
-          materialTextStyles: {
-            ...prevConfig.fonts.materialTextStyles,
-            [styleName]: {
-              ...prevConfig.fonts.materialTextStyles[styleName],
-              [propertyName]: value,
-            },
+    (
+      styleName: MaterialTextStyleKey,
+      propertyName: keyof TextStyleProperties,
+      value: string | number | FontWeightValue | ColorModeValues | undefined,
+      colorMode?: ColorMode
+    ) => {
+      updateThemeConfigState(prevConfig => {
+        const newMaterialTextStyles = { ...prevConfig.fonts.materialTextStyles };
+        const currentStyle = { ...newMaterialTextStyles[styleName] };
+
+        if (propertyName === 'color' && colorMode && typeof value === 'string') {
+          currentStyle.color = {
+            ...(currentStyle.color || DEFAULT_MATERIAL_TEXT_STYLES[styleName].color), // Ensure color object exists
+            [colorMode]: value,
+          } as ColorModeValues;
+        } else if (propertyName !== 'color') {
+          (currentStyle[propertyName] as any) = value;
+        }
+        
+        newMaterialTextStyles[styleName] = currentStyle;
+        return {
+          ...prevConfig,
+          fonts: {
+            ...prevConfig.fonts,
+            materialTextStyles: newMaterialTextStyles,
           },
-        },
-      }));
+        };
+      });
     },
     [updateThemeConfigState]
   );
@@ -212,7 +220,10 @@ export const ThemeProvider = ({ children }: { children: ReactNode }) => {
           ...prevConfig.fonts.customTextStyles,
           {
             name: name + (prevConfig.fonts.customTextStyles.length + 1),
-            style: { ...DEFAULT_MATERIAL_TEXT_STYLES.bodyMedium },
+            style: { 
+              ...DEFAULT_MATERIAL_TEXT_STYLES.bodyMedium, // Base style
+              color: JSON.parse(JSON.stringify(DEFAULT_MATERIAL_TEXT_STYLES.bodyMedium.color)) // Deep copy default color
+            }, 
           },
         ],
       },
@@ -233,16 +244,27 @@ export const ThemeProvider = ({ children }: { children: ReactNode }) => {
   }, [updateThemeConfigState]);
   
   const updateCustomTextStyleProperty = useCallback(
-    (index: number, propertyName: keyof TextStyleProperties, value: string | number | FontWeightValue) => {
+    (
+      index: number,
+      propertyName: keyof TextStyleProperties,
+      value: string | number | FontWeightValue | ColorModeValues | undefined,
+      colorMode?: ColorMode
+    ) => {
       updateThemeConfigState(prevConfig => {
         const newCustomStyles = [...prevConfig.fonts.customTextStyles];
         if (newCustomStyles[index]) {
+          const currentStyle = { ...newCustomStyles[index].style };
+          if (propertyName === 'color' && colorMode && typeof value === 'string') {
+            currentStyle.color = {
+              ...(currentStyle.color || DEFAULT_MATERIAL_TEXT_STYLES.bodyMedium.color), // Ensure color object exists
+              [colorMode]: value,
+            } as ColorModeValues;
+          } else if (propertyName !== 'color') {
+            (currentStyle[propertyName] as any) = value;
+          }
           newCustomStyles[index] = {
             ...newCustomStyles[index],
-            style: {
-              ...newCustomStyles[index].style,
-              [propertyName]: value,
-            },
+            style: currentStyle,
           };
         }
         return {
@@ -316,7 +338,6 @@ export const ThemeProvider = ({ children }: { children: ReactNode }) => {
 
   const addGradient = useCallback(() => {
     updateThemeConfigState(prevConfig => {
-      // Use default light mode colors for the new gradient initially
       const primaryLight = prevConfig.colors.primary?.light || DEFAULT_COLORS.primary.light;
       const secondaryLight = prevConfig.colors.secondary?.light || DEFAULT_COLORS.secondary.light;
       return {
@@ -348,14 +369,14 @@ export const ThemeProvider = ({ children }: { children: ReactNode }) => {
     updateThemeConfigState({
       ...INITIAL_THEME_CONFIG,
       colors: {
-        ...INITIAL_THEME_CONFIG.colors, // Includes background, foreground, accent defaults
-        ...generatedM3Colors,         // Overwrites M3 roles
+        ...INITIAL_THEME_CONFIG.colors, 
+        ...generatedM3Colors,         
         seedColor: initialSeed,
       },
-      fonts: JSON.parse(JSON.stringify(INITIAL_THEME_CONFIG.fonts)),
-      properties: JSON.parse(JSON.stringify(INITIAL_THEME_CONFIG.properties)),
+      fonts: JSON.parse(JSON.stringify(INITIAL_THEME_CONFIG.fonts)), // Ensures deep copy
+      properties: JSON.parse(JSON.stringify(INITIAL_THEME_CONFIG.properties)), // Ensures deep copy
     });
-    setActiveMode('light'); // Reset to light mode
+    setActiveMode('light'); 
   }, [updateThemeConfigState]);
 
   const setContextThemeConfig = useCallback((newConfig: ThemeConfiguration) => {

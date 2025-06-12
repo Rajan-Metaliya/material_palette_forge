@@ -1,4 +1,5 @@
 
+
 "use client";
 
 import React, { CSSProperties, useEffect, useState } from 'react';
@@ -34,8 +35,14 @@ const getCssFontWeight = (fontWeight: FontWeightValue): string | number => {
   return fontWeight;
 };
 
-const applyTextStyle = (styleProps?: TextStyleProperties, color?: string): CSSProperties => {
+const applyTextStyle = (styleProps?: TextStyleProperties, defaultColor?: string, activeMode?: 'light' | 'dark'): CSSProperties => {
   if (!styleProps) return {};
+  
+  let textColor = defaultColor;
+  if (styleProps.color && activeMode) {
+    textColor = styleProps.color[activeMode] || defaultColor;
+  }
+
   const cssStyle: CSSProperties = {
     fontFamily: getFontStack(styleProps.fontFamily),
     fontSize: `${styleProps.fontSize}px`,
@@ -46,8 +53,8 @@ const applyTextStyle = (styleProps?: TextStyleProperties, color?: string): CSSPr
   if (styleProps.lineHeight !== undefined) {
     cssStyle.lineHeight = styleProps.lineHeight;
   }
-  if (color) {
-    cssStyle.color = color;
+  if (textColor) {
+    cssStyle.color = textColor;
   }
   return cssStyle;
 };
@@ -64,13 +71,13 @@ const getStringPropertyValue = (items: CustomStringPropertyItem[], name: string,
 
 interface PhoneScreenProps {
   children: React.ReactNode;
-  colors: MaterialColors; // Now expects the full MaterialColors with ColorModeValues
+  colors: MaterialColors; 
   activeMode: 'light' | 'dark';
   className?: string;
 }
 
 const PhoneScreen: React.FC<PhoneScreenProps> = ({ children, colors, activeMode, className }) => {
-  const { themeConfig } = useTheme(); // To get elevation properties
+  const { themeConfig } = useTheme(); 
 
   const C = (role: keyof MaterialColors) => (colors[role] as ColorModeValues)[activeMode];
 
@@ -83,9 +90,9 @@ const PhoneScreen: React.FC<PhoneScreenProps> = ({ children, colors, activeMode,
         boxShadow: getStringPropertyValue(themeConfig.properties.elevation, 'level3', '0px 4px 8px 3px rgba(0,0,0,0.15), 0px 1px 3px rgba(0,0,0,0.3)'),
       }}
     >
-      <div className="px-3 pt-2 pb-1 flex justify-between items-center" style={{ color: C('onSurfaceVariant') }}>
-        <span style={applyTextStyle(themeConfig.fonts.materialTextStyles.labelSmall, C('onSurfaceVariant'))}>4:51</span>
-        <div className="flex space-x-1">
+      <div className="px-3 pt-2 pb-1 flex justify-between items-center" >
+        <span style={applyTextStyle(themeConfig.fonts.materialTextStyles.labelSmall, C('onSurfaceVariant'), activeMode)}>4:51</span>
+        <div className="flex space-x-1" style={{color: C('onSurfaceVariant')}}>
           <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><path d="M16 4.222V2C16 1.448 15.552 1 15 1H9C8.448 1 8 1.448 8 2V4.222C5.908 4.712 4.148 6.012 3.031 7.732L2.223 9.01C1.948 9.471 2.059 10.057 2.457 10.39L11.5 18.064C11.771 18.299 12.229 18.299 12.5 18.064L21.543 10.39C21.941 10.057 22.052 9.471 21.777 9.01L20.969 7.732C19.852 6.012 18.092 4.712 16 4.222ZM12 16.299L4.473 9.874L5.132 8.815C6.012 7.424 7.464 6.423 9 6.06V11H15V6.06C16.536 6.423 17.988 7.424 18.868 8.815L19.527 9.874L12 16.299Z"/></svg>
           <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><path d="M1 21H21V1H1V21ZM3 3H19V19H3V3Z"/></svg>
           <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><path d="M4 19H8V5H4V19ZM10 19H14V5H10V19ZM16 19H20V5H16V19Z"/></svg>
@@ -135,8 +142,8 @@ const ThemePreview: React.FC = () => {
   return (
     <Card>
       <CardHeader>
-        <CardTitle className="text-xl" style={applyTextStyle(fonts.materialTextStyles.titleLarge, C('onSurface'))}>App Preview</CardTitle>
-        <CardDescription style={applyTextStyle(fonts.materialTextStyles.bodySmall, C('onSurfaceVariant'))}>
+        <CardTitle className="text-xl" style={applyTextStyle(fonts.materialTextStyles.titleLarge, C('onSurface'), activeMode)}>App Preview</CardTitle>
+        <CardDescription style={applyTextStyle(fonts.materialTextStyles.bodySmall, C('onSurfaceVariant'), activeMode)}>
           Live preview of your theme in a mock app ({activeMode} mode).
         </CardDescription>
       </CardHeader>
@@ -144,7 +151,7 @@ const ThemePreview: React.FC = () => {
 
         <PhoneScreen colors={colors} activeMode={activeMode}>
           <div className="flex justify-between items-center mb-4">
-            <h1 style={applyTextStyle(fonts.materialTextStyles.displayMedium, C('onSurface'))}>Today</h1>
+            <h1 style={applyTextStyle(fonts.materialTextStyles.displayMedium, C('onSurface'), activeMode)}>Today</h1>
             <button
               style={{
                 backgroundColor: C('secondaryContainer'),
@@ -160,7 +167,6 @@ const ThemePreview: React.FC = () => {
           <div
             style={{
               backgroundColor: C('tertiaryContainer'),
-              color: C('onTertiaryContainer'),
               borderRadius: `${radiusLg}px`,
               padding: `${spacingSm}px ${spacingMd}px`,
               boxShadow: getStringPropertyValue(properties.elevation, 'level1', '0px 1px 2px rgba(0,0,0,0.3)'),
@@ -168,7 +174,7 @@ const ThemePreview: React.FC = () => {
             className="flex items-center space-x-3 mb-6"
           >
             <Lightbulb size={20} style={{ color: C('tertiary') }}/>
-            <p style={applyTextStyle(fonts.materialTextStyles.bodySmall, C('onTertiaryContainer'))}>
+            <p style={applyTextStyle(fonts.materialTextStyles.bodySmall, C('onTertiaryContainer'), activeMode)}>
               During the winter your plants slow down and need less water.
             </p>
           </div>
@@ -181,21 +187,20 @@ const ThemePreview: React.FC = () => {
                 borderRadius: `${radiusXl}px`,
                 padding: `${spacingMd}px`,
                 boxShadow: getStringPropertyValue(properties.elevation, 'level2', '0px 1px 2px rgba(0,0,0,0.3), 0px 2px 6px 2px rgba(0,0,0,0.15)'),
-                color: C('onSurfaceVariant'),
               }}
               className="mb-4"
             >
               <div className="flex justify-between items-start">
                 <div>
-                  <h2 style={applyTextStyle(fonts.materialTextStyles.titleLarge, C('primary'))}>{room}</h2>
+                  <h2 style={applyTextStyle(fonts.materialTextStyles.titleLarge, C('primary'), activeMode)}>{room}</h2>
                   <div className="mt-2 space-y-2">
                     <div className="flex items-center space-x-2">
                       <CheckSquare size={16} style={{ color: C('primary') }}/>
-                      <span style={applyTextStyle(fonts.materialTextStyles.bodyMedium, C('onSurfaceVariant'))}>Water hoya australis</span>
+                      <span style={applyTextStyle(fonts.materialTextStyles.bodyMedium, C('onSurfaceVariant'), activeMode)}>Water hoya australis</span>
                     </div>
                     <div className="flex items-center space-x-2">
                       <CheckSquare size={16} style={{ color: C('primary') }}/>
-                      <span style={applyTextStyle(fonts.materialTextStyles.bodyMedium, C('onSurfaceVariant'))}>Feed monstera siltepecana</span>
+                      <span style={applyTextStyle(fonts.materialTextStyles.bodyMedium, C('onSurfaceVariant'), activeMode)}>Feed monstera siltepecana</span>
                     </div>
                   </div>
                 </div>
@@ -212,14 +217,14 @@ const ThemePreview: React.FC = () => {
             <button aria-label="Back" style={{color: C('onSurface')}}>
               <ChevronLeft size={24} />
             </button>
-            <h1 style={applyTextStyle(fonts.materialTextStyles.titleLarge, C('onSurface'))} className="invisible">Plant Details</h1>
+            <h1 style={applyTextStyle(fonts.materialTextStyles.titleLarge, C('onSurface'), activeMode)} className="invisible">Plant Details</h1>
             <button aria-label="More options" style={{color: C('onSurface')}}>
               <MoreVertical size={24} />
             </button>
           </div>
 
           <h1
-            style={applyTextStyle(fonts.materialTextStyles.displaySmall, C('primary'))}
+            style={applyTextStyle(fonts.materialTextStyles.displaySmall, C('primary'), activeMode)}
             className="text-center mb-3 leading-tight"
           >
             Monstera <br /> Unique
@@ -252,23 +257,22 @@ const ThemePreview: React.FC = () => {
                   backgroundColor: C('tertiaryContainer'),
                   borderRadius: `${radiusLg}px`,
                   padding: `${spacingSm}px`,
-                  color: C('onTertiaryContainer'),
                   boxShadow: getStringPropertyValue(properties.elevation, 'level1', '0px 1px 2px rgba(0,0,0,0.3)'),
                 }}
                 className="text-center flex flex-col items-center"
               >
                 <item.icon size={18} style={{ color: C('tertiary'), marginBottom: '4px' }}/>
-                <h3 style={applyTextStyle(fonts.materialTextStyles.labelSmall, C('onTertiaryContainer'))} className="mb-0.5">
+                <h3 style={applyTextStyle(fonts.materialTextStyles.labelSmall, C('onTertiaryContainer'), activeMode)} className="mb-0.5">
                   {item.title}
                 </h3>
-                <p style={applyTextStyle(fonts.materialTextStyles.bodySmall, C('onTertiaryContainer'))} className="text-xs leading-tight">
+                <p style={applyTextStyle(fonts.materialTextStyles.bodySmall, C('onTertiaryContainer'), activeMode)} className="text-xs leading-tight">
                   {item.text}
                 </p>
               </div>
             ))}
           </div>
 
-          <h2 style={applyTextStyle(fonts.materialTextStyles.titleMedium, C('onSurface'))} className="mb-2">Care</h2>
+          <h2 style={applyTextStyle(fonts.materialTextStyles.titleMedium, C('onSurface'), activeMode)} className="mb-2">Care</h2>
           <div className="space-y-2">
             {[
               { icon: Droplets, text: 'Water every 7-10 days' },
@@ -279,10 +283,9 @@ const ThemePreview: React.FC = () => {
                     backgroundColor: C('surfaceVariant'),
                     padding: `${spacingSm}px`,
                     borderRadius: `${getNumericPropertyValue(properties.borderRadius, 'md', 8)}px`,
-                    color: C('onSurfaceVariant')
                 }}>
                 <item.icon size={16} style={{ color: C('secondary') }}/>
-                <span style={applyTextStyle(fonts.materialTextStyles.bodyMedium, C('onSurfaceVariant'))}>{item.text}</span>
+                <span style={applyTextStyle(fonts.materialTextStyles.bodyMedium, C('onSurfaceVariant'), activeMode)}>{item.text}</span>
               </div>
             ))}
           </div>

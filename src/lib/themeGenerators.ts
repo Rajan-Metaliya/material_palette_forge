@@ -1,7 +1,9 @@
 
+
 import type { ThemeConfiguration, MaterialColors, ThemeGradient, CustomStringPropertyItem, CustomNumericPropertyItem, TextStyleProperties, MaterialTextStyleKey, FontWeightValue, ColorModeValues } from '@/types/theme';
 
 function toFlutterColor(hex: string): string {
+  if (!hex || hex.length < 4) return `Color(0xFF000000)`; // Default to black if invalid
   return `Color(0xFF${hex.substring(1).toUpperCase()})`;
 }
 
@@ -35,7 +37,7 @@ function mapFontWeightToFlutter(weight: FontWeightValue): string {
   return 'FontWeight.w400';
 }
 
-function generateTextStyleDart(style: TextStyleProperties): string {
+function generateTextStyleDart(style: TextStyleProperties, mode: 'light' | 'dark'): string {
   const parts = [
     `fontFamily: '${style.fontFamily}'`,
     `fontSize: ${style.fontSize.toFixed(1)}`,
@@ -44,6 +46,9 @@ function generateTextStyleDart(style: TextStyleProperties): string {
   ];
   if (style.lineHeight !== undefined) {
     parts.push(`height: ${style.lineHeight.toFixed(2)}`);
+  }
+  if (style.color && style.color[mode]) {
+    parts.push(`color: ${toFlutterColor(style.color[mode])}`);
   }
   return `const TextStyle(\n      ${parts.join(',\n      ')},\n    )`;
 }
@@ -96,8 +101,6 @@ ${lerpLogic}
   }
 }
 
-// Instance for ${className} using default values for now
-// TODO: This instance should be generated based on the current theme state for light/dark
 const _${className.toLowerCase().replace(/\s+/g, '')} = ${className}(
 ${instanceArgs}
 );
@@ -109,7 +112,7 @@ function generateColorSchemeEntries(colors: MaterialColors, mode: 'light' | 'dar
   return `
     brightness: Brightness.${mode},
     primary: ${toFlutterColor(C('primary'))},
-    onPrimary: ${toFlutterColor(C('onPrimaryContainer'))}, // M3 uses onPrimaryContainer generally for text on primary
+    onPrimary: ${toFlutterColor(C('onPrimaryContainer'))}, 
     primaryContainer: ${toFlutterColor(C('primaryContainer'))},
     onPrimaryContainer: ${toFlutterColor(C('onPrimaryContainer'))},
     secondary: ${toFlutterColor(C('secondary'))},
@@ -130,12 +133,12 @@ function generateColorSchemeEntries(colors: MaterialColors, mode: 'light' | 'dar
     onSurfaceVariant: ${toFlutterColor(C('onSurfaceVariant'))},
     outline: ${toFlutterColor(C('outline'))},
     outlineVariant: ${toFlutterColor(C('outlineVariant'))},
-    shadow: ${toFlutterColor(colors.shadow[mode])}, // shadow/scrim might be mode-specific in values
+    shadow: ${toFlutterColor(colors.shadow[mode])}, 
     scrim: ${toFlutterColor(colors.scrim[mode])},
     inverseSurface: ${toFlutterColor(C('inverseSurface'))},
     onInverseSurface: ${toFlutterColor(C('onInverseSurface'))},
     inversePrimary: ${toFlutterColor(C('inversePrimary'))},
-    surfaceTint: ${toFlutterColor(C('primary'))}, // surfaceTint is usually primary
+    surfaceTint: ${toFlutterColor(C('primary'))}, 
   `;
 }
 
@@ -153,12 +156,7 @@ export function generateFlutterCode(theme: ThemeConfiguration): string {
   const elevationClass = generatePropertyExtensionClass('AppElevation', properties.elevation, 'String', stringValueParser);
 
   const gradientDataInstances = properties.gradients.map(g => {
-    // Gradient colors need to be resolved based on the *light* theme for the default instance.
-    // In a real app, you might have different gradient definitions or resolve colors at runtime.
     const resolvedGradientColors = g.colors.map(hexColorRefOrActual => {
-        // This is simplified: assumes gradient colors are direct hex values or map to a primary/secondary etc.
-        // For a robust solution, gradient colors might need to be defined as roles too.
-        // For now, let's assume they are hex literals.
         return toFlutterColor(hexColorRefOrActual);
     }).join(', ');
 
@@ -180,20 +178,28 @@ ${gradientDataInstances}
 );`;
 
 
-  const materialTextThemeEntries = (Object.keys(fonts.materialTextStyles) as MaterialTextStyleKey[]).map(key => {
-    const style = fonts.materialTextStyles[key];
-    return `      ${key}: ${generateTextStyleDart(style)},`;
-  }).join('\n');
+  const generateTextThemeEntries = (mode: 'light' | 'dark'): string => {
+    return (Object.keys(fonts.materialTextStyles) as MaterialTextStyleKey[]).map(key => {
+      const style = fonts.materialTextStyles[key];
+      return `      ${key}: ${generateTextStyleDart(style, mode)},`;
+    }).join('\n');
+  };
+
+  const lightMaterialTextThemeEntries = generateTextThemeEntries('light');
+  const darkMaterialTextThemeEntries = generateTextThemeEntries('dark');
 
   let customTextStylesExtension = '';
   if (fonts.customTextStyles.length > 0) {
+    const generateCustomStyleInstanceArgs = (mode: 'light' | 'dark'): string => {
+      return fonts.customTextStyles.map(cs => `      ${sanitizeDartVariableName(cs.name)}: ${generateTextStyleDart(cs.style, mode)},`).join('\n');
+    };
+
     const customStyleProps = fonts.customTextStyles.map(cs => `  final TextStyle ${sanitizeDartVariableName(cs.name)};`).join('\n');
     const customStyleConstructorArgs = fonts.customTextStyles.map(cs => `    required this.${sanitizeDartVariableName(cs.name)},`).join('\n');
     const customStyleCopyWithArgs = fonts.customTextStyles.map(cs => `TextStyle? ${sanitizeDartVariableName(cs.name)},`).join('');
     const customStyleCopyWithReturn = fonts.customTextStyles.map(cs => `      ${sanitizeDartVariableName(cs.name)}: ${sanitizeDartVariableName(cs.name)} ?? this.${sanitizeDartVariableName(cs.name)},`).join('\n');
     const customStyleLerpLogic = fonts.customTextStyles.map(cs => `      ${sanitizeDartVariableName(cs.name)}: TextStyle.lerp(this.${sanitizeDartVariableName(cs.name)}, other.${sanitizeDartVariableName(cs.name)}, t)!,`).join('\n');
-    const customStyleInstanceArgs = fonts.customTextStyles.map(cs => `      ${sanitizeDartVariableName(cs.name)}: ${generateTextStyleDart(cs.style)},`).join('\n');
-
+    
     customTextStylesExtension = `
 @immutable
 class AppTextStyles extends ThemeExtension<AppTextStyles> {
@@ -219,19 +225,28 @@ ${customStyleLerpLogic}
   }
 }
 
-const _apptextstyles = AppTextStyles(
-${customStyleInstanceArgs}
+// Instances for light and dark modes
+const _apptextstylesLight = AppTextStyles(
+${generateCustomStyleInstanceArgs('light')}
+);
+const _apptextstylesDark = AppTextStyles(
+${generateCustomStyleInstanceArgs('dark')}
 );`;
   }
 
-  const extensionsList = [
-    '_appspacing', '_appborderradius', '_appborderwidth',
-    '_appopacity', '_appelevation', '_appgradients',
-  ];
-  if (fonts.customTextStyles.length > 0) {
-    extensionsList.push('_apptextstyles');
+  const generateExtensionsList = (mode: 'light' | 'dark'): string => {
+    const extensions = [
+      '_appspacing', '_appborderradius', '_appborderwidth',
+      '_appopacity', '_appelevation', '_appgradients',
+    ];
+    if (fonts.customTextStyles.length > 0) {
+      extensions.push(mode === 'light' ? '_apptextstylesLight' : '_apptextstylesDark');
+    }
+    return extensions.map(ext => `        ${ext},`).join('\n');
   }
-  const themeExtensionsString = extensionsList.map(ext => `        ${ext},`).join('\n');
+  
+  const lightExtensionsString = generateExtensionsList('light');
+  const darkExtensionsString = generateExtensionsList('dark');
   
   const lightColorScheme = generateColorSchemeEntries(colors, 'light');
   const darkColorScheme = generateColorSchemeEntries(colors, 'dark');
@@ -239,7 +254,7 @@ ${customStyleInstanceArgs}
   return `// lib/theme/app_theme.dart
 import 'package:flutter/material.dart';
 import 'dart:ui' show lerpDouble;
-import 'dart:math' show pi; // For gradient rotation
+import 'dart:math' show pi; 
 
 // Generated by Material Palette Forge
 
@@ -278,12 +293,18 @@ class AppGradientData {
         else {
           if (direction == 'to right') { begin = Alignment.centerLeft; end = Alignment.centerRight; }
           else if (direction == 'to left') { begin = Alignment.centerRight; end = Alignment.centerLeft; }
-          // ... (add all other direction parsings)
+          else if (direction == 'to top') { begin = Alignment.bottomCenter; end = Alignment.topCenter; }
+          else if (direction == 'to bottom') { begin = Alignment.topCenter; end = Alignment.bottomCenter; }
+          else if (direction == 'to top left') { begin = Alignment.bottomRight; end = Alignment.topLeft; }
+          else if (direction == 'to top right') { begin = Alignment.bottomLeft; end = Alignment.topRight; }
+          else if (direction == 'to bottom left') { begin = Alignment.topRight; end = Alignment.bottomLeft; }
+          else if (direction == 'to bottom right') { begin = Alignment.topLeft; end = Alignment.bottomRight; }
         }
       }
       return angle != null ? LinearGradient(colors: colors, transform: GradientRotation(angle)) : LinearGradient(colors: colors, begin: begin, end: end);
     } else if (type == 'radial') {
-      return RadialGradient(colors: colors, center: Alignment.center, radius: 0.5); // Simplified
+      // Basic radial gradient, Figma tokens might need more specific parsing for position/extent
+      return RadialGradient(colors: colors, center: Alignment.center, radius: 0.5); 
     }
     return null;
   }
@@ -301,7 +322,7 @@ ${_appgradientsInstance}
 
 // --- Main AppTheme Class ---
 class AppTheme {
-  static ThemeData _buildTheme(ColorScheme colorScheme, TextTheme baseTextTheme) {
+  static ThemeData _buildTheme(ColorScheme colorScheme, TextTheme baseTextTheme, List<ThemeExtension<dynamic>> extensions) {
     final textTheme = baseTextTheme.apply(
       bodyColor: colorScheme.onSurface,
       displayColor: colorScheme.onSurface,
@@ -312,14 +333,12 @@ class AppTheme {
       useMaterial3: true,
       colorScheme: colorScheme,
       textTheme: textTheme,
-      extensions: <ThemeExtension<dynamic>>[
-${themeExtensionsString}
-      ],
+      extensions: extensions,
       cardTheme: CardTheme(
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(defaultCardBorderRadius)),
         color: colorScheme.surfaceContainerHighest,
         surfaceTintColor: colorScheme.surfaceTint,
-        elevation: parseUnitValue(_appelevation.level1.split('px')[0]), // Basic elevation parsing
+        elevation: _appelevation.level1.isNotEmpty ? parseUnitValue(_appelevation.level1.split('px')[0]) : 1.0,
       ),
       buttonTheme: ButtonThemeData(
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(_appborderradius.full)),
@@ -343,7 +362,6 @@ ${themeExtensionsString}
         focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(_appborderradius.sm), borderSide: BorderSide(color: colorScheme.primary, width: _appborderwidth.medium)),
         filled: true, fillColor: colorScheme.surfaceContainerHighest,
       ),
-      // Add other component themes as needed
     );
   }
 
@@ -352,9 +370,12 @@ ${themeExtensionsString}
 ${lightColorScheme.trimEnd()}
     );
     final baseTextTheme = TextTheme(
-${materialTextThemeEntries}
+${lightMaterialTextThemeEntries}
     );
-    return _buildTheme(colorScheme, baseTextTheme);
+    final extensions = <ThemeExtension<dynamic>>[
+${lightExtensionsString.trimEnd()}
+    ];
+    return _buildTheme(colorScheme, baseTextTheme, extensions);
   }
 
   static ThemeData get darkTheme {
@@ -362,12 +383,15 @@ ${materialTextThemeEntries}
 ${darkColorScheme.trimEnd()}
     );
     final baseTextTheme = TextTheme(
-${materialTextThemeEntries}
+${darkMaterialTextThemeEntries}
     );
-    return _buildTheme(colorScheme, baseTextTheme);
+    final extensions = <ThemeExtension<dynamic>>[
+${darkExtensionsString.trimEnd()}
+    ];
+    return _buildTheme(colorScheme, baseTextTheme, extensions);
   }
 }
-`;
+`
 }
 
 export function generateJson(theme: ThemeConfiguration): string {
@@ -383,7 +407,6 @@ export function generateFigmaTokens(theme: ThemeConfiguration): string {
     dark: { color: {}, typography: {}, spacing: {}, borderRadius: {}, borderWidth: {}, opacity: {}, boxShadow: {}, gradient: {} },
   };
 
-  // Populate light and dark themes
   (['light', 'dark'] as const).forEach(mode => {
     const modeColors = figmaTokens[mode].color;
     for (const key in themeCopy.colors) {
@@ -399,28 +422,39 @@ export function generateFigmaTokens(theme: ThemeConfiguration): string {
     for (const key in themeCopy.fonts.materialTextStyles) {
       const styleKey = key as MaterialTextStyleKey;
       const styleProps = themeCopy.fonts.materialTextStyles[styleKey];
-      modeTypography[sanitizeDartVariableName(styleKey)] = {
-        value: {
-          fontFamily: styleProps.fontFamily, fontSize: `${styleProps.fontSize}px`,
-          fontWeight: styleProps.fontWeight.toString(), letterSpacing: `${styleProps.letterSpacing}px`,
-          lineHeight: styleProps.lineHeight ? `${styleProps.lineHeight * 100}%` : 'normal',
-        }, type: "typography"
+      const figmaTextStyle: any = {
+        fontFamily: styleProps.fontFamily, 
+        fontSize: `${styleProps.fontSize}px`, // Figma needs unit
+        fontWeight: styleProps.fontWeight.toString(), 
+        letterSpacing: styleProps.letterSpacing !== 0 ? `${styleProps.letterSpacing}px` : '0', // Figma needs unit or '0' for no spacing
+        lineHeight: styleProps.lineHeight ? `${styleProps.lineHeight * 100}%` : 'normal',
       };
+      if (styleProps.color && styleProps.color[mode]) {
+        // Figma expects color directly within the typography object for some plugins,
+        // or you can reference another color token. Here, we embed it.
+         figmaTextStyle.fills = [{type: 'SOLID', color: styleProps.color[mode]}]; // Example for plugin like Tokens Studio
+         // Or simply: figmaTextStyle.color = styleProps.color[mode];
+      }
+      modeTypography[sanitizeDartVariableName(styleKey)] = { value: figmaTextStyle, type: "typography" };
     }
     themeCopy.fonts.customTextStyles.forEach(customStyle => {
-      modeTypography[sanitizeDartVariableName(customStyle.name)] = {
-        value: {
-          fontFamily: customStyle.style.fontFamily, fontSize: `${customStyle.style.fontSize}px`,
-          fontWeight: customStyle.style.fontWeight.toString(), letterSpacing: `${customStyle.style.letterSpacing}px`,
-          lineHeight: customStyle.style.lineHeight ? `${customStyle.style.lineHeight * 100}%` : 'normal',
-        }, type: "typography"
+      const figmaTextStyle: any = {
+        fontFamily: customStyle.style.fontFamily, 
+        fontSize: `${customStyle.style.fontSize}px`,
+        fontWeight: customStyle.style.fontWeight.toString(), 
+        letterSpacing: customStyle.style.letterSpacing !== 0 ? `${customStyle.style.letterSpacing}px` : '0',
+        lineHeight: customStyle.style.lineHeight ? `${customStyle.style.lineHeight * 100}%` : 'normal',
       };
+       if (customStyle.style.color && customStyle.style.color[mode]) {
+         figmaTextStyle.fills = [{type: 'SOLID', color: customStyle.style.color[mode]}];
+         // Or: figmaTextStyle.color = customStyle.style.color[mode];
+      }
+      modeTypography[sanitizeDartVariableName(customStyle.name)] = { value: figmaTextStyle, type: "typography" };
     });
     
-    // Properties are typically mode-agnostic in definition but applied with mode-specific colors
-    // So, we can define them once, perhaps under 'global' or duplicate if necessary.
-    // For simplicity, let's put them under 'light' and they can be aliased if needed in Figma.
-    if (mode === 'light') { // Define properties once, assuming they don't change structurally between modes
+    // Properties are typically mode-agnostic in definition.
+    // We define them once, e.g., under 'light' (or 'global' if preferred).
+    if (mode === 'light') { 
         (themeCopy.properties.spacing as CustomNumericPropertyItem[]).forEach(item => {
             figmaTokens.light.spacing[sanitizeDartVariableName(item.name)] = { value: `${item.value}px`, type: "spacing" };
         });
@@ -434,15 +468,29 @@ export function generateFigmaTokens(theme: ThemeConfiguration): string {
             figmaTokens.light.opacity[sanitizeDartVariableName(item.name)] = { value: item.value.toString(), type: "opacity" };
         });
         (themeCopy.properties.elevation as CustomStringPropertyItem[]).forEach(item => {
-            figmaTokens.light.boxShadow[sanitizeDartVariableName(item.name)] = { value: item.value, type: "boxShadow" };
+            // Figma boxShadow needs parsing if it's a multi-shadow string
+            const shadows = item.value.split(',').map(s => s.trim()).filter(s => s && s !== 'none');
+            const figmaShadows = shadows.map(shadowStr => {
+                const parts = shadowStr.match(/([^\s]+)\s+([^\s]+)\s+([^\s]+)\s+(([^\s]+)\s+)?(rgba?\([^\)]+\)|#[0-9a-fA-F]+)/);
+                if (parts) {
+                    return {
+                        x: parts[1], y: parts[2], blur: parts[3], spread: parts[5] || '0px', color: parts[6], type: 'dropShadow'
+                    };
+                }
+                return { x: '0', y: '0', blur: '0', spread: '0', color: '#00000000', type: 'dropShadow'}; // Fallback for "none" or parse error
+            });
+            figmaTokens.light.boxShadow[sanitizeDartVariableName(item.name)] = { 
+                value: figmaShadows.length === 1 ? figmaShadows[0] : figmaShadows, // Single shadow or array
+                type: "boxShadow" 
+            };
         });
         themeCopy.properties.gradients.forEach((gradient: ThemeGradient) => {
-            const colorsString = gradient.colors.join(', '); // These colors are hex, resolve from theme if they were roles
+            const colorsString = gradient.colors.join(', '); 
             let figmaGradientValue = '';
             if (gradient.type === 'linear') figmaGradientValue = `linear-gradient(${gradient.direction || 'to right'}, ${colorsString})`;
             else if (gradient.type === 'radial') figmaGradientValue = `radial-gradient(${gradient.shape || 'circle'} at ${gradient.extent || 'center'}, ${colorsString})`;
             const tokenName = sanitizeDartVariableName(gradient.name) || `gradient_${Object.keys(figmaTokens.light.gradient).length + 1}`;
-            figmaTokens.light.gradient[tokenName] = { value: figmaGradientValue, type: "other" };
+            figmaTokens.light.gradient[tokenName] = { value: figmaGradientValue, type: "other" }; // Figma might need specific gradient object structure
       });
     }
   });

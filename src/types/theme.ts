@@ -30,11 +30,9 @@ export interface MaterialColors {
   inverseSurface: ColorModeValues;
   onInverseSurface: ColorModeValues;
   inversePrimary: ColorModeValues;
-  // Accent and other specific colors for the builder UI, separate from M3 roles
-  // These might not need dark/light if the builder itself uses the generated theme
-  background?: ColorModeValues; // For builder's own background
-  foreground?: ColorModeValues; // For builder's own foreground
-  accent?: ColorModeValues; // For builder's own accent
+  background?: ColorModeValues; 
+  foreground?: ColorModeValues; 
+  accent?: ColorModeValues; 
 }
 
 export type FontWeightValue = 100 | 200 | 300 | 400 | 500 | 600 | 700 | 800 | 900 | 'normal' | 'bold';
@@ -45,7 +43,7 @@ export interface TextStyleProperties {
   fontWeight: FontWeightValue;
   letterSpacing: number; 
   lineHeight?: number; 
-  // color property here could also be ColorModeValues if text styles have independent light/dark colors
+  color?: ColorModeValues; // Optional color per text style
 }
 
 export type MaterialTextStyleKey =
@@ -65,12 +63,12 @@ export interface ThemeFonts {
 
 export interface CustomStringPropertyItem {
   name: string;
-  value: string; // Values like box-shadow strings
+  value: string; 
 }
 
 export interface CustomNumericPropertyItem {
   name: string;
-  value: number; // Values for spacing, radius, width, opacity (0-1)
+  value: number; 
 }
 
 export type ThemeSpacing = CustomNumericPropertyItem[];
@@ -86,8 +84,7 @@ export interface ThemeGradient {
   direction?: string;
   shape?: string;
   extent?: string;
-  colors: string[]; // Gradient colors themselves are usually fixed, not per-mode directly within the gradient definition
-                   // They would use colors from the MaterialColors which *are* per-mode.
+  colors: string[]; 
 }
 
 

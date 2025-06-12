@@ -1,4 +1,5 @@
 
+
 "use client";
 
 import React from 'react';
@@ -10,9 +11,10 @@ import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
-import { COMMON_WEB_FONTS, FONT_WEIGHT_OPTIONS, MATERIAL_TEXT_STYLE_ORDER, MATERIAL_TEXT_STYLE_LABELS } from '@/lib/consts';
+import { COMMON_WEB_FONTS, FONT_WEIGHT_OPTIONS, MATERIAL_TEXT_STYLE_ORDER, MATERIAL_TEXT_STYLE_LABELS, DEFAULT_MATERIAL_TEXT_STYLES } from '@/lib/consts';
 import { PlusCircle, Trash2 } from 'lucide-react';
 import { useToast } from "@/hooks/use-toast";
+import ColorInput from './ColorInput';
 
 const getFontStack = (fontFamilyName: string): string => {
   const font = COMMON_WEB_FONTS.find(f => f.value === fontFamilyName);
@@ -27,12 +29,16 @@ const getCssFontWeight = (fontWeight: FontWeightValue): string | number => {
 
 
 interface TextStyleEditorProps {
-  styleKey: MaterialTextStyleKey | string;
+  styleKey: MaterialTextStyleKey | string; // Can be M3 key or custom name for custom styles
   styleProps: TextStyleProperties;
-  onPropertyChange: (propertyName: keyof TextStyleProperties, value: any) => void;
+  onPropertyChange: (
+    propertyName: keyof TextStyleProperties, 
+    value: string | number | FontWeightValue | ColorModeValues | undefined, 
+    colorMode?: 'light' | 'dark'
+  ) => void;
   onNameChange?: (newName: string) => void;
   isCustomStyle?: boolean;
-  styleDisplayName?: string;
+  styleDisplayName?: string; // For M3 styles
 }
 
 const TextStyleEditor: React.FC<TextStyleEditorProps> = ({
@@ -44,7 +50,7 @@ const TextStyleEditor: React.FC<TextStyleEditorProps> = ({
   styleDisplayName
 }) => {
   const { toast } = useToast();
-  const { themeConfig, activeMode } = useTheme(); 
+  const { activeMode, themeConfig } = useTheme(); 
 
   const handleNameChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (onNameChange) {
@@ -70,14 +76,21 @@ const TextStyleEditor: React.FC<TextStyleEditorProps> = ({
         toast({ title: "Invalid Input", description: `Please enter a valid number for ${propName}.`, variant: "destructive" });
     }
   };
+  
+  const handleColorChange = (mode: 'light' | 'dark', newColorValue: string) => {
+    onPropertyChange('color', newColorValue, mode);
+  };
+
+  // Determine the color for the preview
+  const previewTextColor = styleProps.color?.[activeMode] || (themeConfig.colors.onSurface as ColorModeValues)[activeMode];
 
   const previewStyle: React.CSSProperties = {
     fontFamily: getFontStack(styleProps.fontFamily),
     fontSize: `${styleProps.fontSize}px`,
     fontWeight: getCssFontWeight(styleProps.fontWeight),
     letterSpacing: `${styleProps.letterSpacing}px`,
-    color: (themeConfig.colors.onSurface as ColorModeValues)[activeMode], // Use active mode color
-    backgroundColor: (themeConfig.colors.surfaceVariant as ColorModeValues)[activeMode], // Use active mode color
+    color: previewTextColor,
+    backgroundColor: (themeConfig.colors.surfaceVariant as ColorModeValues)[activeMode], 
     padding: '8px 12px',
     borderRadius: '4px',
     overflow: 'hidden',
@@ -88,6 +101,10 @@ const TextStyleEditor: React.FC<TextStyleEditorProps> = ({
   if (styleProps.lineHeight !== undefined) {
     previewStyle.lineHeight = styleProps.lineHeight;
   }
+
+  const defaultStyleColors = (styleKey in DEFAULT_MATERIAL_TEXT_STYLES 
+    ? DEFAULT_MATERIAL_TEXT_STYLES[styleKey as MaterialTextStyleKey].color 
+    : DEFAULT_MATERIAL_TEXT_STYLES.bodyMedium.color) || { light: '#000000', dark: '#FFFFFF' };
 
 
   return (
@@ -180,8 +197,20 @@ const TextStyleEditor: React.FC<TextStyleEditorProps> = ({
           />
         </div>
       </div>
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-x-4 gap-y-4 pt-4 border-t mt-4">
+        <ColorInput 
+            label="Text Color (Light Mode)"
+            color={styleProps.color?.light || defaultStyleColors.light}
+            onChange={(newColor) => handleColorChange('light', newColor)}
+        />
+        <ColorInput 
+            label="Text Color (Dark Mode)"
+            color={styleProps.color?.dark || defaultStyleColors.dark}
+            onChange={(newColor) => handleColorChange('dark', newColor)}
+        />
+      </div>
       <div className="mt-4 pt-3 border-t">
-        <Label className="text-xs text-muted-foreground mb-1 block">Preview:</Label>
+        <Label className="text-xs text-muted-foreground mb-1 block">Preview ({activeMode} mode):</Label>
         <p style={previewStyle}>
           The quick brown fox
         </p>
@@ -210,6 +239,7 @@ const FontsSection: React.FC = () => {
         <AccordionContent className="pt-4">
           <CardDescription className="mb-4">
             Configure the standard Material Design text styles. These will directly map to the TextTheme in Flutter.
+            Define specific colors for light and dark modes, or they will inherit from general theme colors.
           </CardDescription>
           {MATERIAL_TEXT_STYLE_ORDER.map(styleKey => (
             <TextStyleEditor
@@ -217,7 +247,7 @@ const FontsSection: React.FC = () => {
               styleKey={styleKey}
               styleDisplayName={MATERIAL_TEXT_STYLE_LABELS[styleKey]}
               styleProps={themeConfig.fonts.materialTextStyles[styleKey]}
-              onPropertyChange={(propName, value) => updateMaterialTextStyle(styleKey, propName, value)}
+              onPropertyChange={(propName, value, colorMode) => updateMaterialTextStyle(styleKey, propName, value, colorMode)}
               isCustomStyle={false}
             />
           ))}
@@ -237,7 +267,7 @@ const FontsSection: React.FC = () => {
               <TextStyleEditor
                 styleKey={customStyle.name} 
                 styleProps={customStyle.style}
-                onPropertyChange={(propName, value) => updateCustomTextStyleProperty(index, propName, value)}
+                onPropertyChange={(propName, value, colorMode) => updateCustomTextStyleProperty(index, propName, value, colorMode)}
                 onNameChange={(newName) => updateCustomTextStyleName(index, newName)}
                 isCustomStyle={true}
               />
