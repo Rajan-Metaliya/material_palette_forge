@@ -1,27 +1,23 @@
 
-// src/context/ThemeContext.tsx
 "use client";
 
 import type { ReactNode } from 'react';
 import React, { createContext, useContext, useState, useCallback } from 'react';
-import type { 
-  ThemeConfiguration, 
-  MaterialColors, 
-  ThemeFonts, 
-  ThemeProperties, 
+import type {
+  ThemeConfiguration,
+  MaterialColors,
+  ThemeFonts,
+  ThemeProperties,
   ThemeGradient,
-  ThemeSpacing,
-  ThemeBorderRadius,
-  ThemeBorderWidth,
-  ThemeOpacity,
-  ThemeElevation,
-  CustomStringPropertyItem, // Changed from CustomPropertyItem
-  CustomNumericPropertyItem
+  CustomStringPropertyItem,
+  CustomNumericPropertyItem,
+  MaterialTextStyleKey,
+  TextStyleProperties,
+  FontWeightValue
 } from '@/types/theme';
-import { INITIAL_THEME_CONFIG } from '@/lib/consts';
+import { INITIAL_THEME_CONFIG, DEFAULT_MATERIAL_TEXT_STYLES } from '@/lib/consts';
 import { generateMaterialColorsFromSeed } from '@/lib/colorUtils';
 
-// Adjusted to handle both string and numeric custom properties
 type PropertyGroupKey = keyof Pick<ThemeProperties, 'spacing' | 'borderRadius' | 'borderWidth' | 'opacity' | 'elevation'>;
 type AnyCustomPropertyItem = CustomStringPropertyItem | CustomNumericPropertyItem;
 
@@ -30,16 +26,30 @@ interface ThemeContextType {
   themeConfig: ThemeConfiguration;
   updateColor: (colorName: keyof MaterialColors, value: string) => void;
   generateAndApplyColorsFromSeed: (seedValue: string) => void;
-  updateFont: (fontRole: keyof ThemeFonts, value: string) => void;
   
+  // Font methods
+  updateMaterialTextStyle: (
+    styleName: MaterialTextStyleKey,
+    propertyName: keyof TextStyleProperties,
+    value: string | number | FontWeightValue
+  ) => void;
+  addCustomTextStyle: (name?: string) => void;
+  updateCustomTextStyleName: (index: number, newName: string) => void;
+  updateCustomTextStyleProperty: (
+    index: number,
+    propertyName: keyof TextStyleProperties,
+    value: string | number | FontWeightValue
+  ) => void;
+  removeCustomTextStyle: (index: number) => void;
+
   updatePropertyListItem: (
     groupKey: PropertyGroupKey,
     itemIndex: number,
-    newItemData: AnyCustomPropertyItem // Uses the union type
+    newItemData: AnyCustomPropertyItem
   ) => void;
   addPropertyListItem: (
     groupKey: PropertyGroupKey,
-    newItemData: AnyCustomPropertyItem // Uses the union type
+    newItemData: AnyCustomPropertyItem
   ) => void;
   removePropertyListItem: (
     groupKey: PropertyGroupKey,
@@ -62,10 +72,12 @@ export const ThemeProvider = ({ children }: { children: ReactNode }) => {
     return {
       ...INITIAL_THEME_CONFIG,
       colors: {
-        ...INITIAL_THEME_CONFIG.colors, 
-        ...generatedColors,            
-        seedColor: initialSeed,        
+        ...INITIAL_THEME_CONFIG.colors,
+        ...generatedColors,
+        seedColor: initialSeed,
       },
+      // Ensure fonts are also deeply copied from INITIAL_THEME_CONFIG
+      fonts: JSON.parse(JSON.stringify(INITIAL_THEME_CONFIG.fonts))
     };
   });
 
@@ -86,9 +98,9 @@ export const ThemeProvider = ({ children }: { children: ReactNode }) => {
     updateThemeConfigState(prevConfig => {
       const generated = generateMaterialColorsFromSeed(seedValue);
       const newColors = {
-        ...prevConfig.colors, 
-        ...generated,        
-        seedColor: seedValue, 
+        ...prevConfig.colors,
+        ...generated,
+        seedColor: seedValue,
       };
       return {
         ...prevConfig,
@@ -97,15 +109,89 @@ export const ThemeProvider = ({ children }: { children: ReactNode }) => {
     });
   }, [updateThemeConfigState]);
 
-  const updateFont = useCallback((fontRole: keyof ThemeFonts, value: string) => {
+  // --- New Font Methods ---
+  const updateMaterialTextStyle = useCallback(
+    (styleName: MaterialTextStyleKey, propertyName: keyof TextStyleProperties, value: string | number | FontWeightValue) => {
+      updateThemeConfigState(prevConfig => ({
+        ...prevConfig,
+        fonts: {
+          ...prevConfig.fonts,
+          materialTextStyles: {
+            ...prevConfig.fonts.materialTextStyles,
+            [styleName]: {
+              ...prevConfig.fonts.materialTextStyles[styleName],
+              [propertyName]: value,
+            },
+          },
+        },
+      }));
+    },
+    [updateThemeConfigState]
+  );
+
+  const addCustomTextStyle = useCallback((name: string = 'newCustomStyle') => {
     updateThemeConfigState(prevConfig => ({
       ...prevConfig,
       fonts: {
         ...prevConfig.fonts,
-        [fontRole]: value,
+        customTextStyles: [
+          ...prevConfig.fonts.customTextStyles,
+          {
+            name: name + (prevConfig.fonts.customTextStyles.length + 1), // Ensure unique default name
+            style: { ...DEFAULT_MATERIAL_TEXT_STYLES.bodyMedium }, // Default to bodyMedium style
+          },
+        ],
       },
     }));
   }, [updateThemeConfigState]);
+
+  const updateCustomTextStyleName = useCallback((index: number, newName: string) => {
+    updateThemeConfigState(prevConfig => {
+      const newCustomStyles = [...prevConfig.fonts.customTextStyles];
+      if (newCustomStyles[index]) {
+        newCustomStyles[index] = { ...newCustomStyles[index], name: newName };
+      }
+      return {
+        ...prevConfig,
+        fonts: { ...prevConfig.fonts, customTextStyles: newCustomStyles },
+      };
+    });
+  }, [updateThemeConfigState]);
+  
+  const updateCustomTextStyleProperty = useCallback(
+    (index: number, propertyName: keyof TextStyleProperties, value: string | number | FontWeightValue) => {
+      updateThemeConfigState(prevConfig => {
+        const newCustomStyles = [...prevConfig.fonts.customTextStyles];
+        if (newCustomStyles[index]) {
+          newCustomStyles[index] = {
+            ...newCustomStyles[index],
+            style: {
+              ...newCustomStyles[index].style,
+              [propertyName]: value,
+            },
+          };
+        }
+        return {
+          ...prevConfig,
+          fonts: { ...prevConfig.fonts, customTextStyles: newCustomStyles },
+        };
+      });
+    },
+    [updateThemeConfigState]
+  );
+
+  const removeCustomTextStyle = useCallback((index: number) => {
+    updateThemeConfigState(prevConfig => ({
+      ...prevConfig,
+      fonts: {
+        ...prevConfig.fonts,
+        customTextStyles: prevConfig.fonts.customTextStyles.filter((_, i) => i !== index),
+      },
+    }));
+  }, [updateThemeConfigState]);
+
+  // --- End New Font Methods ---
+
 
   const updatePropertyListItem = useCallback(
     (
@@ -167,7 +253,7 @@ export const ThemeProvider = ({ children }: { children: ReactNode }) => {
     },
     [updateThemeConfigState]
   );
-  
+
 
   const updateGradient = useCallback((index: number, newGradientData: Partial<ThemeGradient>) => {
     updateThemeConfigState(prevConfig => {
@@ -210,35 +296,41 @@ export const ThemeProvider = ({ children }: { children: ReactNode }) => {
     const initialSeed = INITIAL_THEME_CONFIG.colors.seedColor;
     const generatedColors = generateMaterialColorsFromSeed(initialSeed);
     updateThemeConfigState({
-      ...INITIAL_THEME_CONFIG, 
+      ...INITIAL_THEME_CONFIG,
       colors: {
         ...INITIAL_THEME_CONFIG.colors,
         ...generatedColors,
         seedColor: initialSeed,
       },
+      // Ensure fonts are also deeply copied from INITIAL_THEME_CONFIG for reset
+      fonts: JSON.parse(JSON.stringify(INITIAL_THEME_CONFIG.fonts))
     });
   }, [updateThemeConfigState]);
-  
+
   const setContextThemeConfig = useCallback((newConfig: ThemeConfiguration) => {
-      updateThemeConfigState(newConfig);
+    updateThemeConfigState(newConfig);
   }, [updateThemeConfigState]);
 
 
   return (
-    <ThemeContext.Provider value={{ 
-        themeConfig, 
-        updateColor, 
-        generateAndApplyColorsFromSeed,
-        updateFont, 
-        updatePropertyListItem,
-        addPropertyListItem,
-        removePropertyListItem,
-        updateGradient,
-        addGradient,
-        removeGradient,
-        resetTheme,
-        setThemeConfig: setContextThemeConfig
-      }}>
+    <ThemeContext.Provider value={{
+      themeConfig,
+      updateColor,
+      generateAndApplyColorsFromSeed,
+      updateMaterialTextStyle,
+      addCustomTextStyle,
+      updateCustomTextStyleName,
+      updateCustomTextStyleProperty,
+      removeCustomTextStyle,
+      updatePropertyListItem,
+      addPropertyListItem,
+      removePropertyListItem,
+      updateGradient,
+      addGradient,
+      removeGradient,
+      resetTheme,
+      setThemeConfig: setContextThemeConfig
+    }}>
       {children}
     </ThemeContext.Provider>
   );

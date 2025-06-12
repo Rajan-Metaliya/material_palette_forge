@@ -1,20 +1,21 @@
 
+
 export interface MaterialColors {
-  seedColor: string; // Used as input for generation, not a direct ColorScheme role
+  seedColor: string;
   primary: string;
   secondary: string;
   tertiary: string;
   error: string;
-  surface: string; // Maps to ColorScheme.surface
-  onSurface: string; // Maps to ColorScheme.onSurface
+  surface: string;
+  onSurface: string;
   primaryContainer: string;
-  onPrimaryContainer: string; // This will map to ColorScheme.onPrimary for text on primary, and onPrimaryContainer for text on primaryContainer. Needs care.
+  onPrimaryContainer: string;
   secondaryContainer: string;
-  onSecondaryContainer: string; // Similar mapping for secondary
+  onSecondaryContainer: string;
   tertiaryContainer: string;
-  onTertiaryContainer: string; // Similar mapping for tertiary
+  onTertiaryContainer: string;
   errorContainer: string;
-  onErrorContainer: string; // Similar mapping for error
+  onErrorContainer: string;
   surfaceVariant: string;
   onSurfaceVariant: string;
   outline: string;
@@ -24,40 +25,58 @@ export interface MaterialColors {
   inverseSurface: string;
   onInverseSurface: string;
   inversePrimary: string;
-  // surfaceTint is often same as primary in M3, will be handled in generator
 }
+
+export type FontWeightValue = 100 | 200 | 300 | 400 | 500 | 600 | 700 | 800 | 900 | 'normal' | 'bold';
+
+export interface TextStyleProperties {
+  fontFamily: string;
+  fontSize: number; // For Flutter, this will be treated as double (logical pixels)
+  fontWeight: FontWeightValue;
+  letterSpacing: number; // For Flutter, this will be treated as double (logical pixels)
+  lineHeight?: number; // Optional, for Flutter, this will be TextStyle.height (multiplier)
+  // color?: string; // Potential future enhancement
+}
+
+// Map Material Design text style keys
+export type MaterialTextStyleKey =
+  | 'displayLarge' | 'displayMedium' | 'displaySmall'
+  | 'headlineLarge' | 'headlineMedium' | 'headlineSmall'
+  | 'titleLarge' | 'titleMedium' | 'titleSmall'
+  | 'bodyLarge' | 'bodyMedium' | 'bodySmall'
+  | 'labelLarge' | 'labelMedium' | 'labelSmall';
 
 export interface ThemeFonts {
-  primary: string;
-  secondary: string;
-  monospace: string;
+  materialTextStyles: Record<MaterialTextStyleKey, TextStyleProperties>;
+  customTextStyles: Array<{
+    name: string;
+    style: TextStyleProperties;
+  }>;
 }
 
-// For properties that are primarily strings, e.g., CSS box-shadow
 export interface CustomStringPropertyItem {
   name: string;
-  value: string; 
+  value: string;
 }
 
-// For properties that are numeric
 export interface CustomNumericPropertyItem {
   name: string;
   value: number;
 }
 
-export type ThemeSpacing = CustomNumericPropertyItem[]; // e.g., { name: 'small', value: 8 }
-export type ThemeBorderRadius = CustomNumericPropertyItem[]; // e.g., { name: 'medium', value: 12 }
-export type ThemeBorderWidth = CustomNumericPropertyItem[]; // e.g., { name: 'thin', value: 1 }
-export type ThemeOpacity = CustomNumericPropertyItem[]; // e.g., { name: 'disabled', value: 0.38 }
-export type ThemeElevation = CustomStringPropertyItem[]; // e.g., { name: 'level1', value: '0px 1px 2px rgba(0,0,0,0.1)'}
+export type ThemeSpacing = CustomNumericPropertyItem[];
+export type ThemeBorderRadius = CustomNumericPropertyItem[];
+export type ThemeBorderWidth = CustomNumericPropertyItem[];
+export type ThemeOpacity = CustomNumericPropertyItem[];
+export type ThemeElevation = CustomStringPropertyItem[];
 
 
 export interface ThemeGradient {
   name: string;
   type: 'linear' | 'radial';
-  direction?: string; 
-  shape?: string; 
-  extent?: string; 
+  direction?: string;
+  shape?: string;
+  extent?: string;
   colors: string[];
 }
 
@@ -76,4 +95,3 @@ export interface ThemeConfiguration {
   fonts: ThemeFonts;
   properties: ThemeProperties;
 }
-

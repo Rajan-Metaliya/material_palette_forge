@@ -1,3 +1,4 @@
+
 import type {Config} from 'tailwindcss';
 
 export default {
@@ -10,9 +11,13 @@ export default {
   theme: {
     extend: {
       fontFamily: {
-        body: ['Inter', 'sans-serif'],
-        headline: ['Space Grotesk', 'sans-serif'],
-        code: ['monospace'],
+        // These are fallbacks or base settings.
+        // Specific font families will be applied dynamically via inline styles in ThemePreview
+        // and through ThemeContext for general app styling if needed beyond ShadCN.
+        sans: ['Inter', 'sans-serif'], // Default sans-serif
+        // headline: ['Space Grotesk', 'sans-serif'], // Removed as it will be dynamic
+        // body: ['Inter', 'sans-serif'], // Removed as it will be dynamic
+        // code: ['monospace'], // Removed as it will be dynamic via theme config
       },
       colors: {
         background: 'hsl(var(--background))',
