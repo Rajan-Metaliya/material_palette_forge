@@ -1,7 +1,8 @@
-import type { MaterialColors } from '@/types/theme';
+
+import type { MaterialColors, ColorModeValues } from '@/types/theme';
 
 // Helper to convert hex to HSL (simplified)
-function hexToHsl(hex: string): { h: number; s: number; l: number } | null {
+export function hexToHsl(hex: string): { h: number; s: number; l: number } | null {
   const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
   if (!result) return null;
 
@@ -28,7 +29,7 @@ function hexToHsl(hex: string): { h: number; s: number; l: number } | null {
 }
 
 // Helper to convert HSL to hex (simplified)
-function hslToHex(h: number, s: number, l: number): string {
+export function hslToHex(h: number, s: number, l: number): string {
   s /= 100;
   l /= 100;
   const k = (n: number) => (n + h / 30) % 12;
@@ -40,64 +41,106 @@ function hslToHex(h: number, s: number, l: number): string {
     const hex = Math.round(x * 255).toString(16);
     return hex.length === 1 ? '0' + hex : hex;
   };
-  return `#${toHexComponent(f(0))}${toHexComponent(f(8))}${toHexComponent(f(4))}`;
+  return `#${toHexComponent(f(0))}${toHexComponent(f(8))}${toHexComponent(f(4))}`.toUpperCase();
 }
 
 // Function to generate a palette from a seed color
 // This is a simplified approximation of Material 3 color generation.
-export function generateMaterialColorsFromSeed(seedColor: string): Partial<MaterialColors> {
+// Now returns an object where each color role has a light and dark hex string.
+export function generateMaterialColorsFromSeed(seedColor: string): Omit<MaterialColors, 'seedColor' | 'background' | 'foreground' | 'accent'> {
   const baseHsl = hexToHsl(seedColor);
-  if (!baseHsl) return {}; 
+  if (!baseHsl) throw new Error('Invalid seed color hex');
 
-  const colors: Partial<MaterialColors> = {};
+  const generated: Partial<Omit<MaterialColors, 'seedColor' | 'background' | 'foreground' | 'accent'>> = {};
 
-  const adjustLightness = (l: number, amount: number) => Math.min(100, Math.max(0, l + amount));
+  const adjustLightness = (l: number, amount: number, forDark: boolean = false) => {
+    if (forDark) return Math.min(100, Math.max(0, l - amount)); // For dark, "amount" makes it darker
+    return Math.min(100, Math.max(0, l + amount));
+  }
   const adjustSaturation = (s: number, amount: number) => Math.min(100, Math.max(0, s + amount));
 
-  // Primary
-  colors.primary = hslToHex(baseHsl.h, baseHsl.s, baseHsl.l);
-  colors.onPrimaryContainer = hslToHex(baseHsl.h, adjustSaturation(baseHsl.s, 5), adjustLightness(baseHsl.l, baseHsl.l > 50 ? -50 : 50));
-  colors.primaryContainer = hslToHex(baseHsl.h, adjustSaturation(baseHsl.s, -5), adjustLightness(baseHsl.l, baseHsl.l > 50 ? 40 : -30));
+  // Key Tones for Material 3 like generation (simplified)
+  // Light Mode Tones (L* values approx)
+  const TONES_LIGHT = {
+    primary: 40, onPrimary: 100, primaryContainer: 90, onPrimaryContainer: 10,
+    secondary: 40, onSecondary: 100, secondaryContainer: 90, onSecondaryContainer: 10,
+    tertiary: 40, onTertiary: 100, tertiaryContainer: 90, onTertiaryContainer: 10,
+    error: 40, onError: 100, errorContainer: 90, onErrorContainer: 10,
+    surface: 98, onSurface: 10, surfaceVariant: 90, onSurfaceVariant: 30,
+    outline: 50, outlineVariant: 80,
+    inverseSurface: 20, onInverseSurface: 95, inversePrimary: 80,
+  };
 
-  // Secondary (analogous color, slightly desaturated)
-  const secondaryHue = (baseHsl.h + 30) % 360;
-  const secondarySaturation = adjustSaturation(baseHsl.s, -10);
-  const secondaryLightness = baseHsl.l;
-  colors.secondary = hslToHex(secondaryHue, secondarySaturation, secondaryLightness);
-  colors.onSecondaryContainer = hslToHex(secondaryHue, adjustSaturation(secondarySaturation,5), adjustLightness(secondaryLightness, secondaryLightness > 50 ? -50 : 50));
-  colors.secondaryContainer = hslToHex(secondaryHue, adjustSaturation(secondarySaturation, -5), adjustLightness(secondaryLightness, secondaryLightness > 50 ? 40 : -30));
-
-  // Tertiary (another analogous or complementary, desaturated)
-  const tertiaryHue = (baseHsl.h + 60) % 360; 
-  const tertiarySaturation = adjustSaturation(baseHsl.s, -15);
-  const tertiaryLightness = adjustLightness(baseHsl.l, 5);
-  colors.tertiary = hslToHex(tertiaryHue, tertiarySaturation, tertiaryLightness);
-  colors.onTertiaryContainer = hslToHex(tertiaryHue, adjustSaturation(tertiarySaturation,5), adjustLightness(tertiaryLightness, tertiaryLightness > 50 ? -50 : 50));
-  colors.tertiaryContainer = hslToHex(tertiaryHue, adjustSaturation(tertiarySaturation, -5), adjustLightness(tertiaryLightness, tertiaryLightness > 50 ? 40 : -30));
+  // Dark Mode Tones (L* values approx)
+  const TONES_DARK = {
+    primary: 80, onPrimary: 20, primaryContainer: 30, onPrimaryContainer: 90,
+    secondary: 80, onSecondary: 20, secondaryContainer: 30, onSecondaryContainer: 90,
+    tertiary: 80, onTertiary: 20, tertiaryContainer: 30, onTertiaryContainer: 90,
+    error: 80, onError: 20, errorContainer: 30, onErrorContainer: 90,
+    surface: 6, onSurface: 90, surfaceVariant: 30, onSurfaceVariant: 80,
+    outline: 60, outlineVariant: 30,
+    inverseSurface: 90, onInverseSurface: 20, inversePrimary: 40,
+  };
   
-  // Surface colors
-  colors.surface = hslToHex(baseHsl.h, adjustSaturation(baseHsl.s, -40), 98); // Very light
-  colors.onSurface = hslToHex(baseHsl.h, adjustSaturation(baseHsl.s, -10), 10); // Very dark
-  colors.surfaceVariant = hslToHex(baseHsl.h, adjustSaturation(baseHsl.s, -25), 90);
-  colors.onSurfaceVariant = hslToHex(baseHsl.h, adjustSaturation(baseHsl.s, -5), 30);
+  const errorBaseHsl = hexToHsl("#B3261E") || {h: 7, s:71, l: 41}; // Default M3 error
+
+  const roles = [
+    { name: 'primary', baseHue: baseHsl.h, baseSat: baseHsl.s },
+    { name: 'secondary', baseHue: (baseHsl.h + 30) % 360, baseSat: adjustSaturation(baseHsl.s, -25) },
+    { name: 'tertiary', baseHue: (baseHsl.h + 60) % 360, baseSat: adjustSaturation(baseHsl.s, -10) },
+    { name: 'error', baseHue: errorBaseHsl.h, baseSat: errorBaseHsl.s },
+  ] as const;
+
+  type ColorRoleName = typeof roles[number]['name'];
+  type ToneRoleName = keyof typeof TONES_LIGHT;
+
+
+  for (const mode of ['light', 'dark'] as const) {
+    const currentTones = mode === 'light' ? TONES_LIGHT : TONES_DARK;
+
+    roles.forEach(role => {
+      generated[role.name] = generated[role.name] || { light: '', dark: '' };
+      generated[`on${capitalize(role.name)}Container` as const] = generated[`on${capitalize(role.name)}Container` as const] || { light: '', dark: '' };
+      generated[`${role.name}Container` as const] = generated[`${role.name}Container` as const] || { light: '', dark: '' };
+
+      generated[role.name]![mode] = hslToHex(role.baseHue, role.baseSat, currentTones[role.name]);
+      generated[`on${capitalize(role.name)}Container` as const]![mode] = hslToHex(role.baseHue, adjustSaturation(role.baseSat, role.name === 'error' ? 0 : 5), currentTones[`on${capitalize(role.name)}Container` as ToneRoleName]);
+      generated[`${role.name}Container` as const]![mode] = hslToHex(role.baseHue, adjustSaturation(role.baseSat, -5) , currentTones[`${role.name}Container` as ToneRoleName]);
+    });
+    
+    // Surface, Outline, Inverse (using primary's hue and a low saturation for neutrality)
+    const neutralHue = baseHsl.h;
+    const neutralSat = adjustSaturation(baseHsl.s, -60); // More desaturated for surfaces
+
+    generated.surface = generated.surface || { light: '', dark: '' };
+    generated.onSurface = generated.onSurface || { light: '', dark: '' };
+    generated.surfaceVariant = generated.surfaceVariant || { light: '', dark: '' };
+    generated.onSurfaceVariant = generated.onSurfaceVariant || { light: '', dark: '' };
+    generated.outline = generated.outline || { light: '', dark: '' };
+    generated.outlineVariant = generated.outlineVariant || { light: '', dark: '' };
+    generated.inverseSurface = generated.inverseSurface || { light: '', dark: '' };
+    generated.onInverseSurface = generated.onInverseSurface || { light: '', dark: '' };
+    generated.inversePrimary = generated.inversePrimary || { light: '', dark: '' };
+
+    generated.surface[mode] = hslToHex(neutralHue, neutralSat, currentTones.surface);
+    generated.onSurface[mode] = hslToHex(neutralHue, neutralSat, currentTones.onSurface);
+    generated.surfaceVariant[mode] = hslToHex(neutralHue, neutralSat, currentTones.surfaceVariant);
+    generated.onSurfaceVariant[mode] = hslToHex(neutralHue, neutralSat, currentTones.onSurfaceVariant);
+    generated.outline[mode] = hslToHex(neutralHue, neutralSat, currentTones.outline);
+    generated.outlineVariant[mode] = hslToHex(neutralHue, neutralSat, currentTones.outlineVariant);
+    generated.inverseSurface[mode] = hslToHex(neutralHue, neutralSat, currentTones.inverseSurface);
+    generated.onInverseSurface[mode] = hslToHex(neutralHue, neutralSat, currentTones.onInverseSurface);
+    // InversePrimary uses primary's hue and saturation but with inverse tones
+    generated.inversePrimary[mode] = hslToHex(baseHsl.h, baseHsl.s, currentTones.inversePrimary);
+
+    // Shadow and Scrim are typically black with opacity, so hex is just black.
+    generated.shadow = generated.shadow || { light: '#000000', dark: '#000000' };
+    generated.scrim = generated.scrim || { light: '#000000', dark: '#000000' };
+  }
   
-  colors.outline = hslToHex(baseHsl.h, adjustSaturation(baseHsl.s, -25), 50);
-  colors.outlineVariant = hslToHex(baseHsl.h, adjustSaturation(baseHsl.s, -30), 80);
+  return generated as Omit<MaterialColors, 'seedColor' | 'background' | 'foreground' | 'accent'>;
+}
 
-  // Error (typically fixed, but can be derived if needed)
-  colors.error = '#B3261E'; // M3 Red
-  const errorHsl = hexToHsl(colors.error!) || {h:10, s:80, l:45};
-  colors.onErrorContainer = hslToHex(errorHsl.h, errorHsl.s, 10); 
-  colors.errorContainer = hslToHex(errorHsl.h, errorHsl.s, 90);
-
-  // Inverse
-  colors.inverseSurface = colors.onSurface; // Simplified: dark becomes light
-  colors.onInverseSurface = colors.surface; // light becomes dark
-  colors.inversePrimary = hslToHex(baseHsl.h, baseHsl.s, adjustLightness(baseHsl.l, baseHsl.l > 50 ? -30 : 30)); 
-
-  // Shadow & Scrim (typically black with opacity, hex can't represent opacity directly)
-  colors.shadow = '#000000'; 
-  colors.scrim = '#000000';  
-  
-  return colors;
+function capitalize<T extends string>(s: T): Capitalize<T> {
+  return (s.charAt(0).toUpperCase() + s.slice(1)) as Capitalize<T>;
 }

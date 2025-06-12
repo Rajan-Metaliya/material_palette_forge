@@ -1,44 +1,53 @@
 
 
+export interface ColorModeValues {
+  light: string;
+  dark: string;
+}
+
 export interface MaterialColors {
-  seedColor: string;
-  primary: string;
-  secondary: string;
-  tertiary: string;
-  error: string;
-  surface: string;
-  onSurface: string;
-  primaryContainer: string;
-  onPrimaryContainer: string;
-  secondaryContainer: string;
-  onSecondaryContainer: string;
-  tertiaryContainer: string;
-  onTertiaryContainer: string;
-  errorContainer: string;
-  onErrorContainer: string;
-  surfaceVariant: string;
-  onSurfaceVariant: string;
-  outline: string;
-  outlineVariant: string;
-  shadow: string;
-  scrim: string;
-  inverseSurface: string;
-  onInverseSurface: string;
-  inversePrimary: string;
+  seedColor: string; // Remains a single value for generation
+  primary: ColorModeValues;
+  secondary: ColorModeValues;
+  tertiary: ColorModeValues;
+  error: ColorModeValues;
+  surface: ColorModeValues;
+  onSurface: ColorModeValues;
+  primaryContainer: ColorModeValues;
+  onPrimaryContainer: ColorModeValues;
+  secondaryContainer: ColorModeValues;
+  onSecondaryContainer: ColorModeValues;
+  tertiaryContainer: ColorModeValues;
+  onTertiaryContainer: ColorModeValues;
+  errorContainer: ColorModeValues;
+  onErrorContainer: ColorModeValues;
+  surfaceVariant: ColorModeValues;
+  onSurfaceVariant: ColorModeValues;
+  outline: ColorModeValues;
+  outlineVariant: ColorModeValues;
+  shadow: ColorModeValues;
+  scrim: ColorModeValues;
+  inverseSurface: ColorModeValues;
+  onInverseSurface: ColorModeValues;
+  inversePrimary: ColorModeValues;
+  // Accent and other specific colors for the builder UI, separate from M3 roles
+  // These might not need dark/light if the builder itself uses the generated theme
+  background?: ColorModeValues; // For builder's own background
+  foreground?: ColorModeValues; // For builder's own foreground
+  accent?: ColorModeValues; // For builder's own accent
 }
 
 export type FontWeightValue = 100 | 200 | 300 | 400 | 500 | 600 | 700 | 800 | 900 | 'normal' | 'bold';
 
 export interface TextStyleProperties {
   fontFamily: string;
-  fontSize: number; // For Flutter, this will be treated as double (logical pixels)
+  fontSize: number; 
   fontWeight: FontWeightValue;
-  letterSpacing: number; // For Flutter, this will be treated as double (logical pixels)
-  lineHeight?: number; // Optional, for Flutter, this will be TextStyle.height (multiplier)
-  // color?: string; // Potential future enhancement
+  letterSpacing: number; 
+  lineHeight?: number; 
+  // color property here could also be ColorModeValues if text styles have independent light/dark colors
 }
 
-// Map Material Design text style keys
 export type MaterialTextStyleKey =
   | 'displayLarge' | 'displayMedium' | 'displaySmall'
   | 'headlineLarge' | 'headlineMedium' | 'headlineSmall'
@@ -56,12 +65,12 @@ export interface ThemeFonts {
 
 export interface CustomStringPropertyItem {
   name: string;
-  value: string;
+  value: string; // Values like box-shadow strings
 }
 
 export interface CustomNumericPropertyItem {
   name: string;
-  value: number;
+  value: number; // Values for spacing, radius, width, opacity (0-1)
 }
 
 export type ThemeSpacing = CustomNumericPropertyItem[];
@@ -77,7 +86,8 @@ export interface ThemeGradient {
   direction?: string;
   shape?: string;
   extent?: string;
-  colors: string[];
+  colors: string[]; // Gradient colors themselves are usually fixed, not per-mode directly within the gradient definition
+                   // They would use colors from the MaterialColors which *are* per-mode.
 }
 
 

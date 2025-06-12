@@ -3,7 +3,7 @@
 
 import React from 'react';
 import { useTheme } from '@/context/ThemeContext';
-import type { MaterialTextStyleKey, TextStyleProperties, FontWeightValue } from '@/types/theme';
+import type { MaterialTextStyleKey, TextStyleProperties, FontWeightValue, ColorModeValues } from '@/types/theme';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -14,13 +14,11 @@ import { COMMON_WEB_FONTS, FONT_WEIGHT_OPTIONS, MATERIAL_TEXT_STYLE_ORDER, MATER
 import { PlusCircle, Trash2 } from 'lucide-react';
 import { useToast } from "@/hooks/use-toast";
 
-// Helper to get the full font stack for CSS
 const getFontStack = (fontFamilyName: string): string => {
   const font = COMMON_WEB_FONTS.find(f => f.value === fontFamilyName);
   return font ? font.stack : fontFamilyName;
 };
 
-// Helper to convert theme fontWeight to CSS fontWeight
 const getCssFontWeight = (fontWeight: FontWeightValue): string | number => {
   if (fontWeight === 'normal') return 400;
   if (fontWeight === 'bold') return 700;
@@ -46,7 +44,7 @@ const TextStyleEditor: React.FC<TextStyleEditorProps> = ({
   styleDisplayName
 }) => {
   const { toast } = useToast();
-  const { themeConfig } = useTheme(); // For preview colors
+  const { themeConfig, activeMode } = useTheme(); 
 
   const handleNameChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (onNameChange) {
@@ -78,8 +76,8 @@ const TextStyleEditor: React.FC<TextStyleEditorProps> = ({
     fontSize: `${styleProps.fontSize}px`,
     fontWeight: getCssFontWeight(styleProps.fontWeight),
     letterSpacing: `${styleProps.letterSpacing}px`,
-    color: themeConfig.colors.onSurface,
-    backgroundColor: themeConfig.colors.surfaceVariant,
+    color: (themeConfig.colors.onSurface as ColorModeValues)[activeMode], // Use active mode color
+    backgroundColor: (themeConfig.colors.surfaceVariant as ColorModeValues)[activeMode], // Use active mode color
     padding: '8px 12px',
     borderRadius: '4px',
     overflow: 'hidden',

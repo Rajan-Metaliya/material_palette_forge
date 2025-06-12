@@ -9,7 +9,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
 import { Trash2, PlusCircle } from 'lucide-react';
-import type { ThemeGradient, ThemeProperties, CustomStringPropertyItem, CustomNumericPropertyItem } from '@/types/theme';
+import type { ThemeGradient, ThemeProperties, CustomStringPropertyItem, CustomNumericPropertyItem, ColorModeValues } from '@/types/theme';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import ColorInput from './ColorInput';
 import { useToast } from "@/hooks/use-toast";
@@ -36,7 +36,7 @@ const CustomPropertyEditor: React.FC<CustomPropertyEditorProps> = ({
   valuePlaceholder = "e.g., value",
   displayUnitDescriptor,
 }) => {
-  const { themeConfig, updatePropertyListItem, addPropertyListItem, removePropertyListItem } = useTheme();
+  const { themeConfig, updatePropertyListItem, addPropertyListItem, removePropertyListItem, activeMode } = useTheme();
   const { toast } = useToast();
 
   const items = themeConfig.properties[groupKey] as Array<AnyCustomPropertyItem>;
@@ -71,7 +71,7 @@ const CustomPropertyEditor: React.FC<CustomPropertyEditorProps> = ({
       }
       const numericItem = currentItem as CustomNumericPropertyItem;
       updatePropertyListItem(groupKey, index, { ...numericItem, value: numValue });
-    } else { // string value (e.g., for elevation)
+    } else { 
       const stringItem = currentItem as CustomStringPropertyItem;
       updatePropertyListItem(groupKey, index, { ...stringItem, value: newValueFromInput });
     }
@@ -81,11 +81,11 @@ const CustomPropertyEditor: React.FC<CustomPropertyEditorProps> = ({
     const newItemName = `new${groupLabel.replace(/\s+/g, '')}${items.length + 1}`;
     if (itemValueType === 'number') {
         let defaultValue = 0;
-        if (valuePlaceholder && !isNaN(parseFloat(valuePlaceholder))) { // from default placeholder value
+        if (valuePlaceholder && !isNaN(parseFloat(valuePlaceholder))) { 
              defaultValue = parseFloat(valuePlaceholder);
-        } else if (groupKey === 'opacity') { // specific default for opacity
+        } else if (groupKey === 'opacity') { 
             defaultValue = 0.5;
-        } else { // generic numeric default
+        } else { 
              defaultValue = 0;
         }
       addPropertyListItem(groupKey, { name: newItemName, value: defaultValue } as CustomNumericPropertyItem);
@@ -96,6 +96,11 @@ const CustomPropertyEditor: React.FC<CustomPropertyEditorProps> = ({
   };
   
   const checkerboardBg = 'url(data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAAAXNSR0IArs4c6QAAADBJREFUOE9jfPbs2X8GPEBTIBwkDAGZcAxDUIbC2jAFdIC6hRkh8wAuGEMAVyEAlB3fWwMAAAAASUVORK5CYII=) repeat';
+  const previewSurfaceVariant = (themeConfig.colors.surfaceVariant as ColorModeValues)[activeMode];
+  const previewPrimary = (themeConfig.colors.primary as ColorModeValues)[activeMode];
+  const previewOutline = (themeConfig.colors.outline as ColorModeValues)[activeMode];
+  const previewSurface = (themeConfig.colors.surface as ColorModeValues)[activeMode];
+  const previewSecondaryContainer = (themeConfig.colors.secondaryContainer as ColorModeValues)[activeMode];
 
 
   return (
@@ -130,44 +135,44 @@ const CustomPropertyEditor: React.FC<CustomPropertyEditorProps> = ({
                 <div className="space-y-1.5">
                   <Label htmlFor={`${groupKey}-value-${index}`}>
                     Value
-                    {displayUnitDescriptor ? ` (${displayUnitDescriptor})` : ''}
+                    {displayUnitDescriptor && itemValueType === 'number' && ` (${displayUnitDescriptor})`}
+                    {displayUnitDescriptor && itemValueType === 'string' && ` (${displayUnitDescriptor})`}
                   </Label>
                   <Input
                     id={`${groupKey}-value-${index}`}
                     type={itemValueType === 'number' ? 'number' : 'text'}
                     value={displayValueForInput}
                     onChange={(e) => handleValueChange(index, e.target.value)}
-                    placeholder={valuePlaceholder === "Value (px)" ? "e.g., 8" : valuePlaceholder}
+                    placeholder={valuePlaceholder === "Value (px)" && itemValueType === 'number' ? "e.g., 8" : valuePlaceholder}
                     {...(itemValueType === 'number' && groupKey === 'opacity' ? { step: "0.01", min: "0", max: "1" } : {})}
                     {...(itemValueType === 'number' && (groupKey === 'spacing' || groupKey === 'borderRadius' || groupKey === 'borderWidth') ? { min: "0", step: "1" } : {})}
                   />
                 </div>
               </div>
 
-              {/* Inline Preview */}
               <div className="mt-3 pt-3 border-t">
                 <Label className="text-xs text-muted-foreground mb-1 block">Preview:</Label>
-                <div className="flex items-center justify-start h-16 p-2 rounded" style={{ backgroundColor: groupKey !== 'opacity' && groupKey !== 'elevation' ? themeConfig.colors.surfaceVariant : undefined }}>
+                <div className="flex items-center justify-start h-16 p-2 rounded" style={{ backgroundColor: groupKey !== 'opacity' && groupKey !== 'elevation' ? previewSurfaceVariant : undefined }}>
                   {groupKey === 'spacing' && !isNaN(itemValueAsNumber) && (
-                    <div style={{ display: 'flex', alignItems: 'center', height: '30px', backgroundColor: themeConfig.colors.surface, padding: '4px', border: `1px dashed ${themeConfig.colors.outline}`}}>
-                      <div style={{ width: '20px', height: '20px', backgroundColor: themeConfig.colors.primary, borderRadius:'2px' }}></div>
-                      <div style={{ width: `${Math.max(0, Math.min(50, itemValueAsNumber))}px`, height: '20px', backgroundColor: themeConfig.colors.secondaryContainer, opacity: 0.5 }}></div>
-                      <div style={{ width: '20px', height: '20px', backgroundColor: themeConfig.colors.primary, borderRadius:'2px' }}></div>
+                    <div style={{ display: 'flex', alignItems: 'center', height: '30px', backgroundColor: previewSurface, padding: '4px', border: `1px dashed ${previewOutline}`}}>
+                      <div style={{ width: '20px', height: '20px', backgroundColor: previewPrimary, borderRadius:'2px' }}></div>
+                      <div style={{ width: `${Math.max(0, Math.min(50, itemValueAsNumber))}px`, height: '20px', backgroundColor: previewSecondaryContainer, opacity: 0.5 }}></div>
+                      <div style={{ width: '20px', height: '20px', backgroundColor: previewPrimary, borderRadius:'2px' }}></div>
                     </div>
                   )}
                   {groupKey === 'borderRadius' && !isNaN(itemValueAsNumber) && (
-                    <div style={{ width: '40px', height: '40px', backgroundColor: themeConfig.colors.primary, border: `1px solid ${themeConfig.colors.outline}`, borderRadius: `${itemValueAsNumber}px` }}></div>
+                    <div style={{ width: '40px', height: '40px', backgroundColor: previewPrimary, border: `1px solid ${previewOutline}`, borderRadius: `${itemValueAsNumber}px` }}></div>
                   )}
                   {groupKey === 'borderWidth' && !isNaN(itemValueAsNumber) && (
-                    <div style={{ width: '40px', height: '40px', backgroundColor: themeConfig.colors.surface, border: `${Math.max(0, itemValueAsNumber)}px solid ${themeConfig.colors.primary}` }}></div>
+                    <div style={{ width: '40px', height: '40px', backgroundColor: previewSurface, border: `${Math.max(0, itemValueAsNumber)}px solid ${previewPrimary}` }}></div>
                   )}
                   {groupKey === 'opacity' && !isNaN(itemValueAsNumber) && (
                      <div style={{ width: '40px', height: '40px', background: checkerboardBg, borderRadius: '4px' }}>
-                        <div style={{ width: '100%', height: '100%', backgroundColor: themeConfig.colors.primary, opacity: itemValueAsNumber, borderRadius: '4px' }}></div>
+                        <div style={{ width: '100%', height: '100%', backgroundColor: previewPrimary, opacity: itemValueAsNumber, borderRadius: '4px' }}></div>
                      </div>
                   )}
                   {groupKey === 'elevation' && typeof item.value === 'string' && (
-                    <div style={{ width: '50px', height: '50px', backgroundColor: themeConfig.colors.surface, boxShadow: item.value, borderRadius:'4px', border: `1px solid ${themeConfig.colors.outline}` }}></div>
+                    <div style={{ width: '50px', height: '50px', backgroundColor: previewSurface, boxShadow: item.value, borderRadius:'4px', border: `1px solid ${previewOutline}` }}></div>
                   )}
                 </div>
               </div>
@@ -185,7 +190,7 @@ const CustomPropertyEditor: React.FC<CustomPropertyEditorProps> = ({
 
 
 const PropertiesSection: React.FC = () => {
-  const { themeConfig, updateGradient, addGradient, removeGradient } = useTheme();
+  const { themeConfig, updateGradient, addGradient, removeGradient, activeMode } = useTheme();
   const { toast } = useToast();
 
   const handleGradientChange = (index: number, field: keyof ThemeGradient, value: string | string[]) => {
@@ -209,7 +214,9 @@ const PropertiesSection: React.FC = () => {
     updateGradient(index, updates);
   };
 
-  const handleGradientColorChange = (gradientIndex: number, colorIndex: number, newColor: string) => {
+  const handleGradientColorChange = (gradientIndex: number, colorIndex: number, newColor: string, colorMode?: 'light' | 'dark') => {
+    // Note: Gradient colors are single values, not ColorModeValues. They pick from the theme's current mode.
+    // This function changes the hex string for a color stop.
     const gradient = themeConfig.properties.gradients[gradientIndex];
     if (gradient) {
       const newColors = [...gradient.colors];
@@ -376,7 +383,7 @@ const PropertiesSection: React.FC = () => {
                        <div key={colorIndex} className="flex items-center space-x-2">
                          <ColorInput
                            label={`Color ${colorIndex + 1}`}
-                           color={color}
+                           color={color} // Gradient color stops are single hex values
                            onChange={(newColor) => handleGradientColorChange(index, colorIndex, newColor)}
                            labelClassName="sr-only"
                          />
@@ -391,7 +398,7 @@ const PropertiesSection: React.FC = () => {
                        </div>
                     ))}
                      <Button variant="outline" size="sm" onClick={() => {
-                        const newColors = [...gradient.colors, '#CCCCCC'];
+                        const newColors = [...gradient.colors, (themeConfig.colors.tertiary as ColorModeValues)[activeMode] || '#CCCCCC'];
                         handleGradientChange(index, 'colors', newColors);
                      }}>
                         <PlusCircle className="mr-2 h-4 w-4" /> Add Color Stop

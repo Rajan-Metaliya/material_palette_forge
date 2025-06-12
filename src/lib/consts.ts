@@ -10,7 +10,8 @@ import type {
   CustomNumericPropertyItem,
   TextStyleProperties,
   MaterialTextStyleKey,
-  FontWeightValue
+  FontWeightValue,
+  ColorModeValues
 } from '@/types/theme';
 
 export const COMMON_WEB_FONTS = [
@@ -44,31 +45,42 @@ export const FONT_WEIGHT_OPTIONS: { label: string; value: FontWeightValue }[] = 
 ];
 
 export const DEFAULT_COLORS: MaterialColors = {
-  seedColor: '#6750A4', // This will be the initial seed
-  primary: '#89729B', // Example, will be generated
-  secondary: '#625B71', // Example, will be generated
-  tertiary: '#7D5260', // Example, will be generated
-  error: '#B3261E', // Often fixed
-  surface: '#F4EFF7', // Example, will be generated
-  onSurface: '#1C1B1F', // Example, will be generated
-  primaryContainer: '#EADDFF', // Example, will be generated
-  onPrimaryContainer: '#21005D', // Example, will be generated
-  secondaryContainer: '#E8DEF8', // Example, will be generated
-  onSecondaryContainer: '#1D192B', // Example, will be generated
-  tertiaryContainer: '#FFD8E4', // Example, will be generated
-  onTertiaryContainer: '#31111D', // Example, will be generated
-  errorContainer: '#F9DEDC', // Example, will be generated from error
-  onErrorContainer: '#410E0B', // Example, will be generated from error
-  surfaceVariant: '#E7E0EC', // Example, will be generated
-  onSurfaceVariant: '#49454F', // Example, will be generated
-  outline: '#79747E', // Example, will be generated
-  outlineVariant: '#C4C7C5', // Example, will be generated for dark mode theming
-  shadow: '#000000', // Typically black
-  scrim: '#000000', // Typically black
-  inverseSurface: '#313033', // Example, will be generated
-  onInverseSurface: '#F4EFF4', // Example, will be generated
-  inversePrimary: '#D0BCFF', // Example, will be generated
+  seedColor: '#89729B', // Desaturated Purple (PRD Primary)
+  primary: { light: '#89729B', dark: '#C0B1D0' }, 
+  secondary: { light: '#72899B', dark: '#B1C0D0' }, // Soft Blue (PRD Accent, used as Secondary here)
+  tertiary: { light: '#9B7289', dark: '#D0B1C0' }, // A complementary color
+  error: { light: '#B3261E', dark: '#F2B8B5' },
+  surface: { light: '#F4EFF7', dark: '#2C292E' }, // Light Grayish Purple for light bg (PRD), dark derived
+  onSurface: { light: '#1E1B20', dark: '#E9E0ED' }, // Darker variant for text (PRD), light derived
+  
+  primaryContainer: { light: '#EBDDFA', dark: '#503C60' },
+  onPrimaryContainer: { light: '#2F1545', dark: '#F4E8FF' },
+  secondaryContainer: { light: '#DDECF8', dark: '#3C5060' },
+  onSecondaryContainer: { light: '#152F45', dark: '#E8F4FF' },
+  tertiaryContainer: { light: '#FADDEB', dark: '#603C50' },
+  onTertiaryContainer: { light: '#45152F', dark: '#FFE8F4' },
+  errorContainer: { light: '#F9DEDC', dark: '#8C1D18' },
+  onErrorContainer: { light: '#410E0B', dark: '#FDE9E8' },
+  
+  surfaceVariant: { light: '#E9E0ED', dark: '#4A454D' },
+  onSurfaceVariant: { light: '#4A454D', dark: '#CDC5CE' },
+  
+  outline: { light: '#7C757F', dark: '#968F99' },
+  outlineVariant: { light: '#CAC4CF', dark: '#4A454D' },
+  
+  shadow: { light: '#000000', dark: '#000000' }, // Typically not themed light/dark, opacity handles it
+  scrim: { light: '#000000', dark: '#000000' },
+  
+  inverseSurface: { light: '#332F35', dark: '#E9E0ED' },
+  onInverseSurface: { light: '#F7F0F8', dark: '#1E1B20' },
+  inversePrimary: { light: '#D8BFFF', dark: '#89729B' },
+
+  // For builder UI itself, matching PRD guidelines initially for light mode
+  background: { light: '#F4EFF7', dark: '#221E25' }, // PRD background, derived dark
+  foreground: { light: '#1E1B20', dark: '#E9E0ED' }, // Derived from PRD background's text color
+  accent: { light: '#72899B', dark: '#B1C0D0' }, // PRD accent
 };
+
 
 const defaultHeadlineFont = 'Space Grotesk';
 const defaultBodyFont = 'Inter';
@@ -121,23 +133,23 @@ export const DEFAULT_BORDER_WIDTH: CustomNumericPropertyItem[] = [
 
 export const DEFAULT_GRADIENTS: ThemeGradient[] = [
   {
-    name: 'Primary to Secondary',
+    name: 'PrimaryToSecondary', // Using default light mode colors for the initial example
     type: 'linear',
     direction: 'to right',
-    colors: [DEFAULT_COLORS.primary, DEFAULT_COLORS.secondary], // These will be updated once seed generates them
+    colors: [DEFAULT_COLORS.primary.light, DEFAULT_COLORS.secondary.light], 
   },
 ];
 
 export const DEFAULT_OPACITY: CustomNumericPropertyItem[] = [
   { name: 'disabled', value: 0.38 },
-  { name: 'hover', value: 0.08 }, // Standard M3 hover opacity
-  { name: 'focused', value: 0.12 }, // Standard M3 focus opacity
-  { name: 'pressed', value: 0.12 }, // Standard M3 press opacity
-  { name: 'dragged', value: 0.16 }, // Standard M3 drag opacity
+  { name: 'hover', value: 0.08 },
+  { name: 'focused', value: 0.12 },
+  { name: 'pressed', value: 0.12 },
+  { name: 'dragged', value: 0.16 },
 ];
 
 export const DEFAULT_ELEVATION: CustomStringPropertyItem[] = [
-  { name: 'level0', value: 'none' }, // M3 uses tonal elevation, so shadows are subtle or part of surface color
+  { name: 'level0', value: 'none' },
   { name: 'level1', value: '0px 1px 2px rgba(0, 0, 0, 0.3), 0px 1px 3px 1px rgba(0, 0, 0, 0.15)' },
   { name: 'level2', value: '0px 1px 2px rgba(0, 0, 0, 0.3), 0px 2px 6px 2px rgba(0, 0, 0, 0.15)' },
   { name: 'level3', value: '0px 4px 8px 3px rgba(0,0,0,0.15), 0px 1px 3px rgba(0,0,0,0.3)' },
@@ -162,11 +174,32 @@ export const INITIAL_THEME_CONFIG: ThemeConfiguration = {
 };
 
 
-export const CORE_COLOR_KEYS: (keyof MaterialColors)[] = ['primary', 'secondary', 'tertiary', 'error', 'surface', 'onSurface']
-  .filter(k => k !== 'seedColor') as (keyof MaterialColors)[];
+export const CORE_COLOR_ROLES: (keyof Omit<MaterialColors, 'seedColor' | 'background' | 'foreground' | 'accent'>)[] = [
+    'primary', 'secondary', 'tertiary', 'error', 'surface', 'onSurface'
+];
 
-export const EXTENDED_COLOR_KEYS: (keyof MaterialColors)[] = (Object.keys(DEFAULT_COLORS) as Array<keyof MaterialColors>)
-  .filter(key => key !== 'seedColor' && !CORE_COLOR_KEYS.includes(key));
+export const EXTENDED_COLOR_ROLES: (keyof Omit<MaterialColors, 'seedColor' | 'background' | 'foreground' | 'accent'>)[] = 
+    (Object.keys(DEFAULT_COLORS) as Array<keyof MaterialColors>)
+    .filter(key => key !== 'seedColor' && 
+                   key !== 'background' && 
+                   key !== 'foreground' && 
+                   key !== 'accent' &&
+                   !CORE_COLOR_ROLES.includes(key as any));
+
+// For the UI, we might want to group them differently or have specific lists
+export const UI_COLOR_INPUT_ORDER: (keyof Omit<MaterialColors, 'seedColor'>)[] = [
+    'primary', 'secondary', 'tertiary', 'error', 
+    'surface', 'onSurface', 'background', 'foreground', 'accent', // Including builder UI colors
+    'primaryContainer', 'onPrimaryContainer',
+    'secondaryContainer', 'onSecondaryContainer',
+    'tertiaryContainer', 'onTertiaryContainer',
+    'errorContainer', 'onErrorContainer',
+    'surfaceVariant', 'onSurfaceVariant',
+    'outline', 'outlineVariant',
+    'inverseSurface', 'onInverseSurface', 'inversePrimary',
+    'shadow', 'scrim',
+];
+
 
 export const MATERIAL_TEXT_STYLE_ORDER: MaterialTextStyleKey[] = [
   'displayLarge', 'displayMedium', 'displaySmall',
@@ -227,5 +260,5 @@ export const GRADIENT_RADIAL_EXTENTS = [
     { value: 'closest-corner', label: 'Closest Corner' },
     { value: 'farthest-side', label: 'Farthest Side' },
     { value: 'farthest-corner', label: 'Farthest Corner' },
-    { value: 'center', label: 'Center (Implicit)' }, // Though 'center' is often part of position
+    { value: 'center', label: 'Center (Implicit)' },
 ];
