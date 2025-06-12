@@ -1,9 +1,11 @@
+
 "use client";
 
 import React, { useState, useEffect, ChangeEvent } from 'react';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { cn } from '@/lib/utils';
+import { useToast } from "@/hooks/use-toast";
 
 interface ColorInputProps {
   label: string;
@@ -25,15 +27,18 @@ const ColorInput: React.FC<ColorInputProps> = ({
   colorPickerClassName
 }) => {
   const [inputValue, setInputValue] = useState(color);
+  const { toast } = useToast();
 
   useEffect(() => {
     setInputValue(color);
   }, [color]);
 
+  const isValidHex = (value: string) => /^#([0-9A-Fa-f]{3}){1,2}$/.test(value);
+
   const handleTextChange = (e: ChangeEvent<HTMLInputElement>) => {
     const newValue = e.target.value;
     setInputValue(newValue);
-    if (/^#[0-9A-Fa-f]{6}$/.test(newValue) || /^#[0-9A-Fa-f]{3}$/.test(newValue)) {
+    if (isValidHex(newValue)) {
       onChange(newValue);
     }
   };
@@ -43,11 +48,18 @@ const ColorInput: React.FC<ColorInputProps> = ({
   };
   
   const handleBlur = () => {
-    // If input is invalid on blur, revert to original color
-    if (!(/^#[0-9A-Fa-f]{6}$/.test(inputValue) || /^#[0-9A-Fa-f]{3}$/.test(inputValue))) {
-       setInputValue(color);
+    if (!isValidHex(inputValue)) {
+       setInputValue(color); // Revert to original color if input is invalid
+       toast({
+         title: "Invalid Color",
+         description: `"${inputValue}" is not a valid hex color. Reverted to ${color}.`,
+         variant: "destructive"
+       });
     } else {
-        onChange(inputValue); // Ensure final valid value is propagated
+        // Ensure the potentially valid intermediate input value (if not yet propagated by onChange) is sent
+        if (inputValue !== color) {
+             onChange(inputValue);
+        }
     }
   };
 
@@ -59,7 +71,7 @@ const ColorInput: React.FC<ColorInputProps> = ({
         <Input
           type="color"
           id={`${label}-picker`}
-          value={color}
+          value={color} // Color picker always reflects the committed valid color
           onChange={handleColorPickerChange}
           className={cn("w-10 h-10 p-1 border-none cursor-pointer", colorPickerClassName)}
           aria-label={`${label} color picker`}
@@ -79,3 +91,4 @@ const ColorInput: React.FC<ColorInputProps> = ({
 };
 
 export default ColorInput;
+

@@ -12,24 +12,17 @@ import { Trash2, PlusCircle } from 'lucide-react';
 import type { ThemeGradient, CustomPropertyItem, CustomNumericPropertyItem, ThemeProperties } from '@/types/theme';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import ColorInput from './ColorInput';
+import { useToast } from "@/hooks/use-toast";
 
 type PropertyGroupKey = keyof Pick<ThemeProperties, 'spacing' | 'borderRadius' | 'borderWidth' | 'opacity' | 'elevation'>;
 
 interface CustomPropertyEditorProps {
   groupKey: PropertyGroupKey;
   groupLabel: string;
-  itemType?: 'string' | 'number'; // Default is string. 'string' for CustomPropertyItem, 'number' for CustomNumericPropertyItem (like opacity)
-  
-  namePlaceholder?: string; // Placeholder for the name input, e.g., "smallMargin"
-  valuePlaceholder?: string; // Placeholder for the value input, e.g., "8" or "0.5" or "0px 1px 3px..."
-
-  // If valueSuffix is provided, the input field for value will be numeric-only (type="number").
-  // This suffix will be appended to the number for storage if itemType is 'string'.
-  // It will also be displayed in the label, e.g., "Value (px)".
-  valueSuffix?: string; // e.g., "px", "%"
-
-  // For free-form string values (like elevation) or numeric values (like opacity) where a suffix isn't appropriate for storage,
-  // this describes the unit/type in the label, e.g., "Value (CSS boxShadow)" or "Value (0.0 - 1.0)".
+  itemType?: 'string' | 'number'; 
+  namePlaceholder?: string; 
+  valuePlaceholder?: string; 
+  valueSuffix?: string; 
   displayUnitDescriptor?: string; 
 }
 
@@ -43,25 +36,45 @@ const CustomPropertyEditor: React.FC<CustomPropertyEditorProps> = ({
   displayUnitDescriptor,
 }) => {
   const { themeConfig, updatePropertyListItem, addPropertyListItem, removePropertyListItem } = useTheme();
+  const { toast } = useToast();
   
   const items = themeConfig.properties[groupKey] as Array<CustomPropertyItem | CustomNumericPropertyItem>;
 
   const handleNameChange = (index: number, newName: string) => {
+    if (newName.trim() === '') {
+      toast({ title: "Validation Error", description: "Property name cannot be empty.", variant: "destructive" });
+      return;
+    }
+    const isValidChars = /^[a-zA-Z_][a-zA-Z0-9_]*$/.test(newName);
+    if (!isValidChars) {
+        toast({ title: "Naming Suggestion", description: "Consider using camelCase or snake_case without spaces/special characters for names.", variant: "default" });
+    }
+
     const currentItem = items[index];
     updatePropertyListItem(groupKey, index, { ...currentItem, name: newName });
   };
 
   const handleValueChange = (index: number, newValueFromInput: string) => {
     const currentItem = items[index];
-    if (itemType === 'number') { // For Opacity (CustomNumericPropertyItem, value is number)
+    if (itemType === 'number') { 
       const numValue = parseFloat(newValueFromInput);
-      updatePropertyListItem(groupKey, index, { ...currentItem, value: isNaN(numValue) ? 0 : numValue } as CustomNumericPropertyItem);
-    } else { // For Spacing, BorderRadius, BorderWidth (CustomPropertyItem, value is string) or Elevation
-      if (valueSuffix) { // Input was numeric, append suffix for storage as string
+      if (isNaN(numValue)) {
+        toast({ title: "Validation Error", description: "Invalid number for value.", variant: "destructive" });
+        // Optionally revert or keep old value. For now, we just don't update if invalid.
+        // To revert, you might need to temporarily store the old value or re-fetch.
+        return; 
+      }
+      updatePropertyListItem(groupKey, index, { ...currentItem, value: numValue } as CustomNumericPropertyItem);
+    } else { 
+      if (valueSuffix) { 
         const num = parseFloat(newValueFromInput);
-        const finalValue = isNaN(num) ? `0${valueSuffix}` : `${num}${valueSuffix}`;
+        if (isNaN(num)) {
+          toast({ title: "Validation Error", description: "Invalid number for value.", variant: "destructive" });
+          return;
+        }
+        const finalValue = `${num}${valueSuffix}`;
         updatePropertyListItem(groupKey, index, { ...currentItem, value: finalValue } as CustomPropertyItem);
-      } else { // For Elevation (free-form string)
+      } else { 
         updatePropertyListItem(groupKey, index, { ...currentItem, value: newValueFromInput } as CustomPropertyItem);
       }
     }
@@ -69,16 +82,14 @@ const CustomPropertyEditor: React.FC<CustomPropertyEditorProps> = ({
 
   const handleAddItem = () => {
     const newItemName = `new${groupLabel.replace(/\s+/g, '')}${items.length + 1}`;
-    if (itemType === 'number') { // For Opacity
+    if (itemType === 'number') { 
       addPropertyListItem(groupKey, { name: newItemName, value: 0 } as CustomNumericPropertyItem);
-    } else { // For Spacing, BorderRadius, BorderWidth, Elevation
+    } else { 
       let defaultValue: string;
       if (valueSuffix) {
-        // Use the numeric part of valuePlaceholder if available, otherwise default to "0" + suffix
-        const phNumericPart = valuePlaceholder.match(/^\d+(\.\d+)?/); // extracts leading number
+        const phNumericPart = valuePlaceholder.match(/^\d+(\.\d+)?/); 
         defaultValue = phNumericPart ? `${phNumericPart[0]}${valueSuffix}` : `0${valueSuffix}`;
       } else {
-        // For free-form strings like elevation, use the placeholder directly or a simple default
         defaultValue = valuePlaceholder.startsWith("e.g., ") ? valuePlaceholder.substring(6) : (valuePlaceholder || "default value");
       }
       addPropertyListItem(groupKey, { name: newItemName, value: defaultValue } as CustomPropertyItem);
@@ -97,7 +108,6 @@ const CustomPropertyEditor: React.FC<CustomPropertyEditorProps> = ({
             if (item.value.endsWith(valueSuffix)) {
               displayValueForInput = item.value.slice(0, -item.value.length + item.value.lastIndexOf(valueSuffix));
             }
-            // Ensure it's a valid number string for the input type="number"
             const numPart = parseFloat(displayValueForInput);
             displayValueForInput = isNaN(numPart) ? "0" : numPart.toString();
           }
@@ -153,8 +163,13 @@ const CustomPropertyEditor: React.FC<CustomPropertyEditorProps> = ({
 
 const PropertiesSection: React.FC = () => {
   const { themeConfig, updateGradient, addGradient, removeGradient } = useTheme();
+  const { toast } = useToast();
 
   const handleGradientChange = (index: number, field: keyof ThemeGradient, value: string | string[]) => {
+    if (field === 'name' && typeof value === 'string' && value.trim() === '') {
+        toast({ title: "Validation Error", description: "Gradient name cannot be empty.", variant: "destructive" });
+        return;
+    }
     updateGradient(index, { [field]: value });
   };
   
