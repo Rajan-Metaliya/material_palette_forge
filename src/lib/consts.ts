@@ -18,9 +18,10 @@ export const COMMON_WEB_FONTS = [
 ];
 
 export const DEFAULT_COLORS: MaterialColors = {
-  primary: '#89729B',
-  secondary: '#625B71',
-  tertiary: '#7D5260',
+  seedColor: '#6750A4', // Default M3 purple as seed, will drive initial generation
+  primary: '#89729B', 
+  secondary: '#625B71', 
+  tertiary: '#7D5260', 
   error: '#B3261E',
   surface: '#F4EFF7',
   onSurface: '#1C1B1F',
@@ -108,10 +109,14 @@ export const DEFAULT_PROPERTIES: ThemeProperties = {
 };
 
 export const INITIAL_THEME_CONFIG: ThemeConfiguration = {
-  colors: DEFAULT_COLORS,
+  colors: DEFAULT_COLORS, // ThemeProvider will handle initial generation from seedColor
   fonts: DEFAULT_FONTS,
   properties: DEFAULT_PROPERTIES,
 };
 
-export const CORE_COLOR_KEYS: (keyof MaterialColors)[] = ['primary', 'secondary', 'tertiary', 'error', 'surface', 'onSurface'];
-export const EXTENDED_COLOR_KEYS: (keyof MaterialColors)[] = Object.keys(DEFAULT_COLORS).filter(key => !CORE_COLOR_KEYS.includes(key as keyof MaterialColors)) as (keyof MaterialColors)[];
+// Keys for display sections; seedColor is handled separately.
+export const CORE_COLOR_KEYS: (keyof MaterialColors)[] = ['primary', 'secondary', 'tertiary', 'error', 'surface', 'onSurface']
+  .filter(k => k !== 'seedColor') as (keyof MaterialColors)[];
+
+export const EXTENDED_COLOR_KEYS: (keyof MaterialColors)[] = (Object.keys(DEFAULT_COLORS) as Array<keyof MaterialColors>)
+  .filter(key => key !== 'seedColor' && !CORE_COLOR_KEYS.includes(key));

@@ -1,4 +1,5 @@
 export interface MaterialColors {
+  seedColor: string; // Added seedColor
   primary: string;
   secondary: string;
   tertiary: string;
