@@ -3,30 +3,45 @@
 
 import type { ReactNode } from 'react';
 import React, { createContext, useContext, useState, useCallback } from 'react';
-import type { ThemeConfiguration, MaterialColors, ThemeFonts, ThemeProperties, ThemeGradient } from '@/types/theme';
+import type { 
+  ThemeConfiguration, 
+  MaterialColors, 
+  ThemeFonts, 
+  ThemeProperties, 
+  ThemeGradient,
+  ThemeSpacing,
+  ThemeBorderRadius,
+  ThemeBorderWidth,
+  ThemeOpacity,
+  ThemeElevation,
+  CustomPropertyItem,
+  CustomNumericPropertyItem
+} from '@/types/theme';
 import { INITIAL_THEME_CONFIG } from '@/lib/consts';
 import { generateMaterialColorsFromSeed } from '@/lib/colorUtils';
+
+type PropertyGroupKey = keyof Pick<ThemeProperties, 'spacing' | 'borderRadius' | 'borderWidth' | 'opacity' | 'elevation'>;
 
 interface ThemeContextType {
   themeConfig: ThemeConfiguration;
   updateColor: (colorName: keyof MaterialColors, value: string) => void;
   generateAndApplyColorsFromSeed: (seedValue: string) => void;
   updateFont: (fontRole: keyof ThemeFonts, value: string) => void;
-  updateProperty: <K extends keyof ThemeProperties, V extends ThemeProperties[K]>(
-    propertyGroup: K,
-    subKey: keyof V,
-    value: V[keyof V]
+  
+  updatePropertyListItem: (
+    groupKey: PropertyGroupKey,
+    itemIndex: number,
+    newItemData: CustomPropertyItem | CustomNumericPropertyItem
   ) => void;
-  updateNestedProperty: <
-    PKey extends keyof ThemeProperties,
-    NKey extends keyof ThemeProperties[PKey],
-    NNKey extends keyof ThemeProperties[PKey][NKey]
-  >(
-    propertyGroup: PKey,
-    nestedKey: NKey,
-    subNestedKey: NNKey,
-    value: ThemeProperties[PKey][NKey][NNKey]
+  addPropertyListItem: (
+    groupKey: PropertyGroupKey,
+    newItemData: CustomPropertyItem | CustomNumericPropertyItem
   ) => void;
+  removePropertyListItem: (
+    groupKey: PropertyGroupKey,
+    itemIndex: number
+  ) => void;
+
   updateGradient: (index: number, newGradient: Partial<ThemeGradient>) => void;
   addGradient: () => void;
   removeGradient: (index: number) => void;
@@ -43,9 +58,9 @@ export const ThemeProvider = ({ children }: { children: ReactNode }) => {
     return {
       ...INITIAL_THEME_CONFIG,
       colors: {
-        ...INITIAL_THEME_CONFIG.colors, // Start with defaults (e.g. error color, seedColor itself)
-        ...generatedColors,             // Override with generated colors (primary, secondary etc.)
-        seedColor: initialSeed,         // Ensure seedColor is explicitly set from defaults
+        ...INITIAL_THEME_CONFIG.colors, 
+        ...generatedColors,            
+        seedColor: initialSeed,        
       },
     };
   });
@@ -67,9 +82,9 @@ export const ThemeProvider = ({ children }: { children: ReactNode }) => {
     updateThemeConfigState(prevConfig => {
       const generated = generateMaterialColorsFromSeed(seedValue);
       const newColors = {
-        ...prevConfig.colors, // Keep existing values like error, shadow, scrim if not in `generated`
-        ...generated,         // Overwrite with newly generated values
-        seedColor: seedValue, // Update the seed color itself
+        ...prevConfig.colors, 
+        ...generated,        
+        seedColor: seedValue, 
       };
       return {
         ...prevConfig,
@@ -88,57 +103,67 @@ export const ThemeProvider = ({ children }: { children: ReactNode }) => {
     }));
   }, [updateThemeConfigState]);
 
-  const updateProperty = useCallback(
-    <K extends keyof ThemeProperties, V extends ThemeProperties[K]>(
-      propertyGroup: K,
-      subKey: keyof V,
-      value: V[keyof V]
+  const updatePropertyListItem = useCallback(
+    (
+      groupKey: PropertyGroupKey,
+      itemIndex: number,
+      newItemData: CustomPropertyItem | CustomNumericPropertyItem
     ) => {
-      updateThemeConfigState(prevConfig => ({
-        ...prevConfig,
-        properties: {
-          ...prevConfig.properties,
-          [propertyGroup]: {
-            ...(prevConfig.properties[propertyGroup] as V),
-            [subKey]: value,
-          },
-        },
-      }));
-    },
-    [updateThemeConfigState]
-  );
-  
-  const updateNestedProperty = useCallback(
-    <
-      PKey extends keyof ThemeProperties,
-      NKey extends keyof ThemeProperties[PKey],
-      NNKey extends keyof ThemeProperties[PKey][NKey]
-    >(
-      propertyGroup: PKey,
-      nestedKey: NKey,
-      subNestedKey: NNKey,
-      value: ThemeProperties[PKey][NKey][NNKey]
-    ) => {
-      updateThemeConfigState((prevConfig) => {
-        const group = prevConfig.properties[propertyGroup];
-        const nestedGroup = group[nestedKey] as ThemeProperties[PKey][NKey];
+      updateThemeConfigState(prevConfig => {
+        const currentGroup = prevConfig.properties[groupKey] as Array<CustomPropertyItem | CustomNumericPropertyItem>;
+        const updatedGroup = [...currentGroup];
+        updatedGroup[itemIndex] = newItemData;
         return {
           ...prevConfig,
           properties: {
             ...prevConfig.properties,
-            [propertyGroup]: {
-              ...group,
-              [nestedKey]: {
-                ...nestedGroup,
-                [subNestedKey]: value,
-              },
-            },
+            [groupKey]: updatedGroup,
           },
         };
       });
     },
     [updateThemeConfigState]
   );
+
+  const addPropertyListItem = useCallback(
+    (
+      groupKey: PropertyGroupKey,
+      newItemData: CustomPropertyItem | CustomNumericPropertyItem
+    ) => {
+      updateThemeConfigState(prevConfig => {
+        const currentGroup = prevConfig.properties[groupKey] as Array<CustomPropertyItem | CustomNumericPropertyItem>;
+        return {
+          ...prevConfig,
+          properties: {
+            ...prevConfig.properties,
+            [groupKey]: [...currentGroup, newItemData],
+          },
+        };
+      });
+    },
+    [updateThemeConfigState]
+  );
+
+  const removePropertyListItem = useCallback(
+    (
+      groupKey: PropertyGroupKey,
+      itemIndex: number
+    ) => {
+      updateThemeConfigState(prevConfig => {
+        const currentGroup = prevConfig.properties[groupKey] as Array<CustomPropertyItem | CustomNumericPropertyItem>;
+        const updatedGroup = currentGroup.filter((_, index) => index !== itemIndex);
+        return {
+          ...prevConfig,
+          properties: {
+            ...prevConfig.properties,
+            [groupKey]: updatedGroup,
+          },
+        };
+      });
+    },
+    [updateThemeConfigState]
+  );
+  
 
   const updateGradient = useCallback((index: number, newGradientData: Partial<ThemeGradient>) => {
     updateThemeConfigState(prevConfig => {
@@ -181,7 +206,7 @@ export const ThemeProvider = ({ children }: { children: ReactNode }) => {
     const initialSeed = INITIAL_THEME_CONFIG.colors.seedColor;
     const generatedColors = generateMaterialColorsFromSeed(initialSeed);
     updateThemeConfigState({
-      ...INITIAL_THEME_CONFIG,
+      ...INITIAL_THEME_CONFIG, // This will reset properties to their default array structures
       colors: {
         ...INITIAL_THEME_CONFIG.colors,
         ...generatedColors,
@@ -201,8 +226,9 @@ export const ThemeProvider = ({ children }: { children: ReactNode }) => {
         updateColor, 
         generateAndApplyColorsFromSeed,
         updateFont, 
-        updateProperty, 
-        updateNestedProperty,
+        updatePropertyListItem,
+        addPropertyListItem,
+        removePropertyListItem,
         updateGradient,
         addGradient,
         removeGradient,

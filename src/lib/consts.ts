@@ -1,4 +1,4 @@
-import type { ThemeConfiguration, MaterialColors, ThemeFonts, ThemeProperties, ThemeGradient, ThemeSpacing, ThemeBorderRadius, ThemeBorderWidth, ThemeOpacity, ThemeElevation } from '@/types/theme';
+import type { ThemeConfiguration, MaterialColors, ThemeFonts, ThemeProperties, ThemeGradient, ThemeSpacing, ThemeBorderRadius, ThemeBorderWidth, ThemeOpacity, ThemeElevation, CustomPropertyItem, CustomNumericPropertyItem } from '@/types/theme';
 
 export const COMMON_WEB_FONTS = [
   { value: 'Inter', label: 'Inter' },
@@ -14,11 +14,10 @@ export const COMMON_WEB_FONTS = [
   { value: 'Times New Roman', label: 'Times New Roman' },
   { value: 'Courier New', label: 'Courier New' },
   { value: 'monospace', label: 'Monospace (System)'},
-  // Add more fonts as needed
 ];
 
 export const DEFAULT_COLORS: MaterialColors = {
-  seedColor: '#6750A4', // Default M3 purple as seed, will drive initial generation
+  seedColor: '#6750A4', 
   primary: '#89729B', 
   secondary: '#625B71', 
   tertiary: '#7D5260', 
@@ -50,28 +49,28 @@ export const DEFAULT_FONTS: ThemeFonts = {
   monospace: 'monospace',
 };
 
-export const DEFAULT_SPACING: ThemeSpacing = {
-  xs: '4px',
-  sm: '8px',
-  md: '16px',
-  lg: '24px',
-  xl: '32px',
-};
+export const DEFAULT_SPACING: ThemeSpacing = [
+  { name: 'xs', value: '4px' },
+  { name: 'sm', value: '8px' },
+  { name: 'md', value: '16px' },
+  { name: 'lg', value: '24px' },
+  { name: 'xl', value: '32px' },
+];
 
-export const DEFAULT_BORDER_RADIUS: ThemeBorderRadius = {
-  xs: '2px',
-  sm: '4px',
-  md: '8px',
-  lg: '12px',
-  xl: '16px',
-  full: '9999px',
-};
+export const DEFAULT_BORDER_RADIUS: ThemeBorderRadius = [
+  { name: 'xs', value: '2px' },
+  { name: 'sm', value: '4px' },
+  { name: 'md', value: '8px' },
+  { name: 'lg', value: '12px' },
+  { name: 'xl', value: '16px' },
+  { name: 'full', value: '9999px' },
+];
 
-export const DEFAULT_BORDER_WIDTH: ThemeBorderWidth = {
-  thin: '1px',
-  medium: '2px',
-  thick: '3px',
-};
+export const DEFAULT_BORDER_WIDTH: ThemeBorderWidth = [
+  { name: 'thin', value: '1px' },
+  { name: 'medium', value: '2px' },
+  { name: 'thick', value: '3px' },
+];
 
 export const DEFAULT_GRADIENTS: ThemeGradient[] = [
   {
@@ -82,22 +81,22 @@ export const DEFAULT_GRADIENTS: ThemeGradient[] = [
   },
 ];
 
-export const DEFAULT_OPACITY: ThemeOpacity = {
-  disabled: 0.38,
-  hover: 0.08,
-  focused: 0.12,
-  pressed: 0.12,
-  dragged: 0.16,
-};
+export const DEFAULT_OPACITY: ThemeOpacity = [
+  { name: 'disabled', value: 0.38 },
+  { name: 'hover', value: 0.08 },
+  { name: 'focused', value: 0.12 },
+  { name: 'pressed', value: 0.12 },
+  { name: 'dragged', value: 0.16 },
+];
 
-export const DEFAULT_ELEVATION: ThemeElevation = {
-  level0: 'none',
-  level1: '0px 1px 2px rgba(0, 0, 0, 0.3), 0px 1px 3px 1px rgba(0, 0, 0, 0.15)',
-  level2: '0px 1px 2px rgba(0, 0, 0, 0.3), 0px 2px 6px 2px rgba(0, 0, 0, 0.15)',
-  level3: '0px 4px 8px 3px rgba(0, 0, 0, 0.15), 0px 1px 3px rgba(0, 0, 0, 0.3)',
-  level4: '0px 6px 10px 4px rgba(0, 0, 0, 0.15), 0px 2px 3px rgba(0, 0, 0, 0.3)',
-  level5: '0px 8px 12px 6px rgba(0, 0, 0, 0.15), 0px 4px 4px rgba(0, 0, 0, 0.3)',
-};
+export const DEFAULT_ELEVATION: ThemeElevation = [
+  { name: 'level0', value: 'none' },
+  { name: 'level1', value: '0px 1px 2px rgba(0, 0, 0, 0.3), 0px 1px 3px 1px rgba(0, 0, 0, 0.15)' },
+  { name: 'level2', value: '0px 1px 2px rgba(0, 0, 0, 0.3), 0px 2px 6px 2px rgba(0, 0, 0, 0.15)' },
+  { name: 'level3', value: '0px 4px 8px 3px rgba(0, 0, 0, 0.15), 0px 1px 3px rgba(0, 0, 0, 0.3)' },
+  { name: 'level4', value: '0px 6px 10px 4px rgba(0, 0, 0, 0.15), 0px 2px 3px rgba(0, 0, 0, 0.3)' },
+  { name: 'level5', value: '0px 8px 12px 6px rgba(0, 0, 0, 0.15), 0px 4px 4px rgba(0, 0, 0, 0.3)' },
+];
 
 export const DEFAULT_PROPERTIES: ThemeProperties = {
   spacing: DEFAULT_SPACING,
@@ -109,12 +108,11 @@ export const DEFAULT_PROPERTIES: ThemeProperties = {
 };
 
 export const INITIAL_THEME_CONFIG: ThemeConfiguration = {
-  colors: DEFAULT_COLORS, // ThemeProvider will handle initial generation from seedColor
+  colors: DEFAULT_COLORS,
   fonts: DEFAULT_FONTS,
   properties: DEFAULT_PROPERTIES,
 };
 
-// Keys for display sections; seedColor is handled separately.
 export const CORE_COLOR_KEYS: (keyof MaterialColors)[] = ['primary', 'secondary', 'tertiary', 'error', 'surface', 'onSurface']
   .filter(k => k !== 'seedColor') as (keyof MaterialColors)[];
 

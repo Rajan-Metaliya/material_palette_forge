@@ -1,3 +1,4 @@
+
 "use client";
 
 import React from 'react';
@@ -8,23 +9,105 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
 import { Trash2, PlusCircle } from 'lucide-react';
-import type { ThemeSpacing, ThemeBorderRadius, ThemeBorderWidth, ThemeOpacity, ThemeElevation, ThemeGradient } from '@/types/theme';
+import type { ThemeGradient, CustomPropertyItem, CustomNumericPropertyItem, ThemeProperties } from '@/types/theme';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import ColorInput from './ColorInput';
 
+type PropertyGroupKey = keyof Pick<ThemeProperties, 'spacing' | 'borderRadius' | 'borderWidth' | 'opacity' | 'elevation'>;
+
+interface CustomPropertyEditorProps {
+  groupKey: PropertyGroupKey;
+  groupLabel: string;
+  itemType?: 'string' | 'number'; // Default is string
+  itemPlaceholder?: string;
+  itemUnit?: string; // e.g. px, for display or help text
+}
+
+const CustomPropertyEditor: React.FC<CustomPropertyEditorProps> = ({
+  groupKey,
+  groupLabel,
+  itemType = 'string',
+  itemPlaceholder = "e.g., value",
+  itemUnit
+}) => {
+  const { themeConfig, updatePropertyListItem, addPropertyListItem, removePropertyListItem } = useTheme();
+  
+  const items = themeConfig.properties[groupKey] as Array<CustomPropertyItem | CustomNumericPropertyItem>;
+
+  const handleNameChange = (index: number, newName: string) => {
+    const currentItem = items[index];
+    updatePropertyListItem(groupKey, index, { ...currentItem, name: newName });
+  };
+
+  const handleValueChange = (index: number, newValue: string) => {
+    const currentItem = items[index];
+    if (itemType === 'number') {
+      const numValue = parseFloat(newValue);
+      updatePropertyListItem(groupKey, index, { ...currentItem, value: isNaN(numValue) ? 0 : numValue } as CustomNumericPropertyItem);
+    } else {
+      updatePropertyListItem(groupKey, index, { ...currentItem, value: newValue } as CustomPropertyItem);
+    }
+  };
+
+  const handleAddItem = () => {
+    const newItemName = `new${groupLabel.replace(/\s+/g, '')}${items.length + 1}`;
+    if (itemType === 'number') {
+      addPropertyListItem(groupKey, { name: newItemName, value: 0 } as CustomNumericPropertyItem);
+    } else {
+      addPropertyListItem(groupKey, { name: newItemName, value: itemPlaceholder.startsWith("e.g., ") ? itemPlaceholder.substring(6).split(" ")[0] : '0px' } as CustomPropertyItem);
+    }
+  };
+
+  return (
+    <AccordionItem value={groupKey}>
+      <AccordionTrigger className="text-lg font-semibold">{groupLabel}</AccordionTrigger>
+      <AccordionContent className="pt-4 space-y-4">
+        {items.map((item, index) => (
+          <Card key={index} className="p-4 space-y-3 relative">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 items-end">
+              <div className="space-y-1.5">
+                <Label htmlFor={`${groupKey}-name-${index}`}>Name (Variable)</Label>
+                <Input
+                  id={`${groupKey}-name-${index}`}
+                  value={item.name}
+                  onChange={(e) => handleNameChange(index, e.target.value)}
+                  placeholder="e.g., smallMargin"
+                />
+              </div>
+              <div className="space-y-1.5">
+                <Label htmlFor={`${groupKey}-value-${index}`}>Value {itemUnit ? `(${itemUnit})` : ''}</Label>
+                <Input
+                  id={`${groupKey}-value-${index}`}
+                  type={itemType === 'number' ? 'number' : 'text'}
+                  value={item.value.toString()} // toString for number values
+                  onChange={(e) => handleValueChange(index, e.target.value)}
+                  placeholder={itemPlaceholder}
+                  {...(itemType === 'number' ? { step: "0.01", min: "0", max: groupKey === 'opacity' ? "1" : undefined } : {})}
+                />
+              </div>
+            </div>
+            <Button
+              variant="ghost"
+              size="icon"
+              className="absolute top-2 right-2 text-destructive hover:text-destructive-foreground hover:bg-destructive/90"
+              onClick={() => removePropertyListItem(groupKey, index)}
+              aria-label={`Remove ${item.name}`}
+            >
+              <Trash2 className="h-4 w-4" />
+            </Button>
+          </Card>
+        ))}
+        <Button onClick={handleAddItem} variant="outline" size="sm">
+          <PlusCircle className="mr-2 h-4 w-4" /> Add {groupLabel.slice(0,-1)} Item
+        </Button>
+      </AccordionContent>
+    </AccordionItem>
+  );
+};
+
 
 const PropertiesSection: React.FC = () => {
-  const { themeConfig, updateProperty, updateGradient, addGradient, removeGradient } = useTheme();
-
-  const handlePropertyChange = <K extends keyof ThemeSpacing | keyof ThemeBorderRadius | keyof ThemeBorderWidth | keyof ThemeOpacity | keyof ThemeElevation>(
-    group: 'spacing' | 'borderRadius' | 'borderWidth' | 'opacity' | 'elevation',
-    key: K,
-    value: string | number
-  ) => {
-    // Type assertion is tricky here, this simplified approach assumes correct types are passed.
-    // A more robust solution might involve type guards or a more specific update function signature.
-    updateProperty(group, key as any, value as any);
-  };
+  const { themeConfig, updateGradient, addGradient, removeGradient } = useTheme();
 
   const handleGradientChange = (index: number, field: keyof ThemeGradient, value: string | string[]) => {
     updateGradient(index, { [field]: value });
@@ -48,61 +131,11 @@ const PropertiesSection: React.FC = () => {
       <CardContent>
         <Accordion type="multiple" defaultValue={['spacing']} className="w-full space-y-4">
           
-          {/* Spacing */}
-          <AccordionItem value="spacing">
-            <AccordionTrigger className="text-lg font-semibold">Spacing</AccordionTrigger>
-            <AccordionContent className="pt-4 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-x-6 gap-y-4">
-              {(Object.keys(themeConfig.properties.spacing) as Array<keyof ThemeSpacing>).map(key => (
-                <div key={key} className="space-y-1.5">
-                  <Label htmlFor={`spacing-${key}`} className="capitalize">{key}</Label>
-                  <Input
-                    id={`spacing-${key}`}
-                    value={themeConfig.properties.spacing[key]}
-                    onChange={(e) => handlePropertyChange('spacing', key, e.target.value)}
-                    placeholder="e.g., 8px"
-                  />
-                </div>
-              ))}
-            </AccordionContent>
-          </AccordionItem>
-
-          {/* Border Radius */}
-          <AccordionItem value="borderRadius">
-            <AccordionTrigger className="text-lg font-semibold">Border Radius</AccordionTrigger>
-            <AccordionContent className="pt-4 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-x-6 gap-y-4">
-              {(Object.keys(themeConfig.properties.borderRadius) as Array<keyof ThemeBorderRadius>).map(key => (
-                <div key={key} className="space-y-1.5">
-                  <Label htmlFor={`borderRadius-${key}`} className="capitalize">{key}</Label>
-                  <Input
-                    id={`borderRadius-${key}`}
-                    value={themeConfig.properties.borderRadius[key]}
-                    onChange={(e) => handlePropertyChange('borderRadius', key, e.target.value)}
-                    placeholder="e.g., 8px"
-                  />
-                </div>
-              ))}
-            </AccordionContent>
-          </AccordionItem>
-
-          {/* Border Width */}
-          <AccordionItem value="borderWidth">
-            <AccordionTrigger className="text-lg font-semibold">Border Width</AccordionTrigger>
-            <AccordionContent className="pt-4 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-x-6 gap-y-4">
-              {(Object.keys(themeConfig.properties.borderWidth) as Array<keyof ThemeBorderWidth>).map(key => (
-                <div key={key} className="space-y-1.5">
-                  <Label htmlFor={`borderWidth-${key}`} className="capitalize">{key}</Label>
-                  <Input
-                    id={`borderWidth-${key}`}
-                    value={themeConfig.properties.borderWidth[key]}
-                    onChange={(e) => handlePropertyChange('borderWidth', key, e.target.value)}
-                    placeholder="e.g., 1px"
-                  />
-                </div>
-              ))}
-            </AccordionContent>
-          </AccordionItem>
-
-          {/* Gradients */}
+          <CustomPropertyEditor groupKey="spacing" groupLabel="Spacing" itemPlaceholder="e.g., 8px" itemUnit="px, rem, etc." />
+          <CustomPropertyEditor groupKey="borderRadius" groupLabel="Border Radiuses" itemPlaceholder="e.g., 4px" itemUnit="px, %" />
+          <CustomPropertyEditor groupKey="borderWidth" groupLabel="Border Widths" itemPlaceholder="e.g., 1px" itemUnit="px" />
+          
+          {/* Gradients (Keeps its existing structure, as it's already an array of complex objects) */}
           <AccordionItem value="gradients">
             <AccordionTrigger className="text-lg font-semibold">Gradients</AccordionTrigger>
             <AccordionContent className="pt-4 space-y-6">
@@ -151,7 +184,6 @@ const PropertiesSection: React.FC = () => {
                       />
                     </div>
                   )}
-                  {/* TODO: Add inputs for radial gradient properties (shape, extent) if needed */}
                   <div className="space-y-2">
                     <Label>Colors</Label>
                     {gradient.colors.map((color, colorIndex) => (
@@ -173,7 +205,7 @@ const PropertiesSection: React.FC = () => {
                        </div>
                     ))}
                      <Button variant="outline" size="sm" onClick={() => {
-                        const newColors = [...gradient.colors, '#CCCCCC'];
+                        const newColors = [...gradient.colors, '#CCCCCC']; // Default new color stop
                         handleGradientChange(index, 'colors', newColors);
                      }}>
                         <PlusCircle className="mr-2 h-4 w-4" /> Add Color Stop
@@ -187,44 +219,8 @@ const PropertiesSection: React.FC = () => {
             </AccordionContent>
           </AccordionItem>
 
-          {/* Opacity */}
-          <AccordionItem value="opacity">
-            <AccordionTrigger className="text-lg font-semibold">Opacity</AccordionTrigger>
-            <AccordionContent className="pt-4 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-x-6 gap-y-4">
-              {(Object.keys(themeConfig.properties.opacity) as Array<keyof ThemeOpacity>).map(key => (
-                <div key={key} className="space-y-1.5">
-                  <Label htmlFor={`opacity-${key}`} className="capitalize">{key}</Label>
-                  <Input
-                    id={`opacity-${key}`}
-                    type="number"
-                    step="0.01"
-                    min="0"
-                    max="1"
-                    value={themeConfig.properties.opacity[key]}
-                    onChange={(e) => handlePropertyChange('opacity', key, parseFloat(e.target.value))}
-                  />
-                </div>
-              ))}
-            </AccordionContent>
-          </AccordionItem>
-
-          {/* Elevation */}
-          <AccordionItem value="elevation">
-            <AccordionTrigger className="text-lg font-semibold">Elevation (Shadows)</AccordionTrigger>
-            <AccordionContent className="pt-4 grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-4">
-              {(Object.keys(themeConfig.properties.elevation) as Array<keyof ThemeElevation>).map(key => (
-                <div key={key} className="space-y-1.5">
-                  <Label htmlFor={`elevation-${key}`} className="capitalize">{key.replace('level', 'Level ')}</Label>
-                  <Input
-                    id={`elevation-${key}`}
-                    value={themeConfig.properties.elevation[key]}
-                    onChange={(e) => handlePropertyChange('elevation', key, e.target.value)}
-                    placeholder="e.g., 0px 1px 3px rgba(0,0,0,0.2)"
-                  />
-                </div>
-              ))}
-            </AccordionContent>
-          </AccordionItem>
+          <CustomPropertyEditor groupKey="opacity" groupLabel="Opacities" itemType="number" itemPlaceholder="e.g., 0.5" itemUnit="0.0 - 1.0" />
+          <CustomPropertyEditor groupKey="elevation" groupLabel="Elevations (Shadows)" itemPlaceholder="e.g., 0px 1px 3px rgba(0,0,0,0.2)" itemUnit="CSS boxShadow" />
 
         </Accordion>
       </CardContent>

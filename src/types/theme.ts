@@ -1,5 +1,5 @@
 export interface MaterialColors {
-  seedColor: string; // Added seedColor
+  seedColor: string;
   primary: string;
   secondary: string;
   tertiary: string;
@@ -31,28 +31,22 @@ export interface ThemeFonts {
   monospace: string;
 }
 
-export interface ThemeSpacing {
-  xs: string;
-  sm: string;
-  md: string;
-  lg: string;
-  xl: string;
+export interface CustomPropertyItem {
+  name: string;
+  value: string; // For Spacing, BorderRadius, BorderWidth, Elevation (string value like '8px', '0 0 2px black')
 }
 
-export interface ThemeBorderRadius {
-  xs: string;
-  sm: string;
-  md: string;
-  lg: string;
-  xl: string;
-  full: string;
+export interface CustomNumericPropertyItem {
+  name: string;
+  value: number; // For Opacity
 }
 
-export interface ThemeBorderWidth {
-  thin: string;
-  medium: string;
-  thick: string;
-}
+export type ThemeSpacing = CustomPropertyItem[];
+export type ThemeBorderRadius = CustomPropertyItem[];
+export type ThemeBorderWidth = CustomPropertyItem[];
+export type ThemeOpacity = CustomNumericPropertyItem[];
+export type ThemeElevation = CustomPropertyItem[];
+
 
 export interface ThemeGradient {
   name: string;
@@ -63,22 +57,6 @@ export interface ThemeGradient {
   colors: string[];
 }
 
-export interface ThemeOpacity {
-  disabled: number;
-  hover: number;
-  focused: number;
-  pressed: number;
-  dragged: number;
-}
-
-export interface ThemeElevation {
-  level0: string;
-  level1: string;
-  level2: string;
-  level3: string;
-  level4: string;
-  level5: string;
-}
 
 export interface ThemeProperties {
   spacing: ThemeSpacing;
