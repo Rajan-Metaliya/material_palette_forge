@@ -13,17 +13,19 @@ import type { ThemeGradient, ThemeProperties, CustomStringPropertyItem, CustomNu
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import ColorInput from './ColorInput';
 import { useToast } from "@/hooks/use-toast";
+import { GRADIENT_TYPES, GRADIENT_LINEAR_DIRECTIONS, GRADIENT_RADIAL_SHAPES, GRADIENT_RADIAL_EXTENTS } from '@/lib/consts';
 
 type PropertyGroupKey = keyof Pick<ThemeProperties, 'spacing' | 'borderRadius' | 'borderWidth' | 'opacity' | 'elevation'>;
-type ItemValueType = 'string' | 'number'; // To distinguish between CustomStringPropertyItem and CustomNumericPropertyItem
+type AnyCustomPropertyItem = CustomStringPropertyItem | CustomNumericPropertyItem;
+
 
 interface CustomPropertyEditorProps {
   groupKey: PropertyGroupKey;
   groupLabel: string;
-  itemValueType: ItemValueType; // Explicitly define if values are strings or numbers
-  namePlaceholder?: string; 
-  valuePlaceholder?: string; 
-  displayUnitDescriptor?: string; // e.g., "px", "0.0 - 1.0", "CSS boxShadow"
+  itemValueType: 'string' | 'number';
+  namePlaceholder?: string;
+  valuePlaceholder?: string;
+  displayUnitDescriptor?: string;
 }
 
 const CustomPropertyEditor: React.FC<CustomPropertyEditorProps> = ({
@@ -36,8 +38,8 @@ const CustomPropertyEditor: React.FC<CustomPropertyEditorProps> = ({
 }) => {
   const { themeConfig, updatePropertyListItem, addPropertyListItem, removePropertyListItem } = useTheme();
   const { toast } = useToast();
-  
-  const items = themeConfig.properties[groupKey] as Array<CustomStringPropertyItem | CustomNumericPropertyItem>;
+
+  const items = themeConfig.properties[groupKey] as Array<AnyCustomPropertyItem>;
 
   const handleNameChange = (index: number, newName: string) => {
     if (newName.trim() === '') {
@@ -50,40 +52,45 @@ const CustomPropertyEditor: React.FC<CustomPropertyEditorProps> = ({
     }
 
     const currentItem = items[index];
-    // Cast to specific type based on itemValueType before spreading
     if (itemValueType === 'number') {
-        updatePropertyListItem(groupKey, index, { ...currentItem as CustomNumericPropertyItem, name: newName });
+        const numericItem = currentItem as CustomNumericPropertyItem;
+        updatePropertyListItem(groupKey, index, { ...numericItem, name: newName });
     } else {
-        updatePropertyListItem(groupKey, index, { ...currentItem as CustomStringPropertyItem, name: newName });
+        const stringItem = currentItem as CustomStringPropertyItem;
+        updatePropertyListItem(groupKey, index, { ...stringItem, name: newName });
     }
   };
 
   const handleValueChange = (index: number, newValueFromInput: string) => {
     const currentItem = items[index];
-    if (itemValueType === 'number') { 
+    if (itemValueType === 'number') {
       const numValue = parseFloat(newValueFromInput);
       if (isNaN(numValue)) {
         toast({ title: "Validation Error", description: "Invalid number for value.", variant: "destructive" });
-        return; 
+        return;
       }
-      updatePropertyListItem(groupKey, index, { ...(currentItem as CustomNumericPropertyItem), value: numValue });
-    } else { // itemValueType === 'string' (e.g., for Elevation)
-      updatePropertyListItem(groupKey, index, { ...(currentItem as CustomStringPropertyItem), value: newValueFromInput });
+      const numericItem = currentItem as CustomNumericPropertyItem;
+      updatePropertyListItem(groupKey, index, { ...numericItem, value: numValue });
+    } else {
+      const stringItem = currentItem as CustomStringPropertyItem;
+      updatePropertyListItem(groupKey, index, { ...stringItem, value: newValueFromInput });
     }
   };
 
   const handleAddItem = () => {
     const newItemName = `new${groupLabel.replace(/\s+/g, '')}${items.length + 1}`;
-    if (itemValueType === 'number') { 
+    if (itemValueType === 'number') {
         let defaultValue = 0;
-        if (valuePlaceholder.match(/^-?\d+(\.\d+)?$/)) { // Check if placeholder is a simple number
+        if (valuePlaceholder && !isNaN(parseFloat(valuePlaceholder))) {
             defaultValue = parseFloat(valuePlaceholder);
         } else if (groupKey === 'opacity') {
-            defaultValue = 0.5; // Default for opacity
+            defaultValue = 0.5;
+        } else if (valuePlaceholder === "Value (px)") { // Generic numeric default
+             defaultValue = 0;
         }
       addPropertyListItem(groupKey, { name: newItemName, value: defaultValue } as CustomNumericPropertyItem);
-    } else { // itemValueType === 'string'
-      const defaultValue = valuePlaceholder.startsWith("e.g., ") ? valuePlaceholder.substring(6) : (valuePlaceholder || "default value");
+    } else {
+      const defaultValue = valuePlaceholder && valuePlaceholder.startsWith("e.g., ") ? valuePlaceholder.substring(6) : (valuePlaceholder || "default value");
       addPropertyListItem(groupKey, { name: newItemName, value: defaultValue } as CustomStringPropertyItem);
     }
   };
@@ -93,9 +100,7 @@ const CustomPropertyEditor: React.FC<CustomPropertyEditorProps> = ({
       <AccordionTrigger className="text-lg font-semibold">{groupLabel}</AccordionTrigger>
       <AccordionContent className="pt-4 space-y-4">
         {items.map((item, index) => {
-          // Value for input field should always be string, even if stored as number
           const displayValueForInput = item.value.toString();
-
           return (
             <Card key={index} className="p-4 space-y-3 relative">
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 items-end">
@@ -110,7 +115,7 @@ const CustomPropertyEditor: React.FC<CustomPropertyEditorProps> = ({
                 </div>
                 <div className="space-y-1.5">
                   <Label htmlFor={`${groupKey}-value-${index}`}>
-                    Value 
+                    Value
                     {displayUnitDescriptor ? ` (${displayUnitDescriptor})` : ''}
                   </Label>
                   <Input
@@ -118,9 +123,9 @@ const CustomPropertyEditor: React.FC<CustomPropertyEditorProps> = ({
                     type={itemValueType === 'number' ? 'number' : 'text'}
                     value={displayValueForInput}
                     onChange={(e) => handleValueChange(index, e.target.value)}
-                    placeholder={valuePlaceholder}
+                    placeholder={valuePlaceholder === "Value (px)" ? "e.g., 8" : valuePlaceholder}
                     {...(itemValueType === 'number' && groupKey === 'opacity' ? { step: "0.01", min: "0", max: "1" } : {})}
-                    {...(itemValueType === 'number' && (groupKey === 'spacing' || groupKey === 'borderRadius' || groupKey === 'borderWidth') ? { step: "1", min: "0" } : {})}
+                    {...(itemValueType === 'number' && (groupKey === 'spacing' || groupKey === 'borderRadius' || groupKey === 'borderWidth') ? { min: "0", step: "1" } : {})}
                   />
                 </div>
               </div>
@@ -154,9 +159,22 @@ const PropertiesSection: React.FC = () => {
         toast({ title: "Validation Error", description: "Gradient name cannot be empty.", variant: "destructive" });
         return;
     }
-    updateGradient(index, { [field]: value });
+    let updates: Partial<ThemeGradient> = { [field]: value };
+    if (field === 'type') {
+        if (value === 'radial') {
+            updates.direction = undefined;
+            if(!themeConfig.properties.gradients[index].shape) updates.shape = 'circle';
+            if(!themeConfig.properties.gradients[index].extent) updates.extent = 'farthest-corner';
+
+        } else if (value === 'linear') {
+            updates.shape = undefined;
+            updates.extent = undefined;
+            if(!themeConfig.properties.gradients[index].direction) updates.direction = 'to right';
+        }
+    }
+    updateGradient(index, updates);
   };
-  
+
   const handleGradientColorChange = (gradientIndex: number, colorIndex: number, newColor: string) => {
     const gradient = themeConfig.properties.gradients[gradientIndex];
     if (gradient) {
@@ -174,32 +192,32 @@ const PropertiesSection: React.FC = () => {
       </CardHeader>
       <CardContent>
         <Accordion type="multiple" defaultValue={['spacing']} className="w-full space-y-4">
-          
-          <CustomPropertyEditor 
-            groupKey="spacing" 
-            groupLabel="Spacing" 
+
+          <CustomPropertyEditor
+            groupKey="spacing"
+            groupLabel="Spacing"
             itemValueType="number"
-            valuePlaceholder="8" 
-            displayUnitDescriptor="px" 
+            valuePlaceholder="Value (px)"
+            displayUnitDescriptor="px"
             namePlaceholder="e.g., small"
           />
-          <CustomPropertyEditor 
-            groupKey="borderRadius" 
-            groupLabel="Border Radiuses" 
+          <CustomPropertyEditor
+            groupKey="borderRadius"
+            groupLabel="Border Radiuses"
             itemValueType="number"
-            valuePlaceholder="4" 
+            valuePlaceholder="Value (px)"
             displayUnitDescriptor="px"
             namePlaceholder="e.g., buttonRadius"
           />
-          <CustomPropertyEditor 
-            groupKey="borderWidth" 
-            groupLabel="Border Widths" 
+          <CustomPropertyEditor
+            groupKey="borderWidth"
+            groupLabel="Border Widths"
             itemValueType="number"
-            valuePlaceholder="1" 
+            valuePlaceholder="Value (px)"
             displayUnitDescriptor="px"
             namePlaceholder="e.g., cardBorder"
           />
-          
+
           <AccordionItem value="gradients">
             <AccordionTrigger className="text-lg font-semibold">Gradients</AccordionTrigger>
             <AccordionContent className="pt-4 space-y-6">
@@ -230,44 +248,68 @@ const PropertiesSection: React.FC = () => {
                       onValueChange={(value: 'linear' | 'radial') => handleGradientChange(index, 'type', value)}
                     >
                       <SelectTrigger id={`gradient-type-${index}`}>
-                        <SelectValue />
+                        <SelectValue placeholder="Select gradient type" />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="linear">Linear</SelectItem>
-                        <SelectItem value="radial">Radial</SelectItem>
+                        {GRADIENT_TYPES.map(typeOpt => (
+                          <SelectItem key={typeOpt.value} value={typeOpt.value}>{typeOpt.label}</SelectItem>
+                        ))}
                       </SelectContent>
                     </Select>
                   </div>
+
                   {gradient.type === 'linear' && (
                     <div className="space-y-1.5">
                       <Label htmlFor={`gradient-direction-${index}`}>Direction/Angle</Label>
-                      <Input
-                        id={`gradient-direction-${index}`}
+                      <Select
                         value={gradient.direction || ''}
-                        onChange={(e) => handleGradientChange(index, 'direction', e.target.value)}
-                        placeholder="e.g., to right, 45deg"
-                      />
+                        onValueChange={(value: string) => handleGradientChange(index, 'direction', value)}
+                      >
+                        <SelectTrigger id={`gradient-direction-${index}`}>
+                          <SelectValue placeholder="Select direction/angle" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {GRADIENT_LINEAR_DIRECTIONS.map(dirOpt => (
+                            <SelectItem key={dirOpt.value} value={dirOpt.value}>{dirOpt.label}</SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
                     </div>
                   )}
+
                    {gradient.type === 'radial' && (
                     <>
                         <div className="space-y-1.5">
-                            <Label htmlFor={`gradient-shape-${index}`}>Shape (optional)</Label>
-                            <Input
-                            id={`gradient-shape-${index}`}
-                            value={gradient.shape || ''}
-                            onChange={(e) => handleGradientChange(index, 'shape', e.target.value)}
-                            placeholder="e.g., circle, ellipse"
-                            />
+                            <Label htmlFor={`gradient-shape-${index}`}>Shape</Label>
+                             <Select
+                                value={gradient.shape || ''}
+                                onValueChange={(value: string) => handleGradientChange(index, 'shape', value)}
+                            >
+                                <SelectTrigger id={`gradient-shape-${index}`}>
+                                <SelectValue placeholder="Select shape" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                {GRADIENT_RADIAL_SHAPES.map(shapeOpt => (
+                                    <SelectItem key={shapeOpt.value} value={shapeOpt.value}>{shapeOpt.label}</SelectItem>
+                                ))}
+                                </SelectContent>
+                            </Select>
                         </div>
                         <div className="space-y-1.5">
-                            <Label htmlFor={`gradient-extent-${index}`}>Extent/Position (optional)</Label>
-                            <Input
-                            id={`gradient-extent-${index}`}
-                            value={gradient.extent || ''}
-                            onChange={(e) => handleGradientChange(index, 'extent', e.target.value)}
-                            placeholder="e.g., farthest-corner, center"
-                            />
+                            <Label htmlFor={`gradient-extent-${index}`}>Extent/Position</Label>
+                            <Select
+                                value={gradient.extent || ''}
+                                onValueChange={(value: string) => handleGradientChange(index, 'extent', value)}
+                            >
+                                <SelectTrigger id={`gradient-extent-${index}`}>
+                                <SelectValue placeholder="Select extent/position" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                {GRADIENT_RADIAL_EXTENTS.map(extentOpt => (
+                                    <SelectItem key={extentOpt.value} value={extentOpt.value}>{extentOpt.label}</SelectItem>
+                                ))}
+                                </SelectContent>
+                            </Select>
                         </div>
                     </>
                   )}
@@ -292,7 +334,7 @@ const PropertiesSection: React.FC = () => {
                        </div>
                     ))}
                      <Button variant="outline" size="sm" onClick={() => {
-                        const newColors = [...gradient.colors, '#CCCCCC']; 
+                        const newColors = [...gradient.colors, '#CCCCCC'];
                         handleGradientChange(index, 'colors', newColors);
                      }}>
                         <PlusCircle className="mr-2 h-4 w-4" /> Add Color Stop
@@ -306,19 +348,19 @@ const PropertiesSection: React.FC = () => {
             </AccordionContent>
           </AccordionItem>
 
-          <CustomPropertyEditor 
-            groupKey="opacity" 
-            groupLabel="Opacities" 
-            itemValueType="number" 
+          <CustomPropertyEditor
+            groupKey="opacity"
+            groupLabel="Opacities"
+            itemValueType="number"
             valuePlaceholder="0.5"
             displayUnitDescriptor="0.0 - 1.0"
             namePlaceholder="e.g., imageHover"
           />
-          <CustomPropertyEditor 
-            groupKey="elevation" 
-            groupLabel="Elevations (Shadows)" 
-            itemValueType="string" // Elevation values are complex strings
-            valuePlaceholder="0px 1px 3px rgba(0,0,0,0.2)" 
+          <CustomPropertyEditor
+            groupKey="elevation"
+            groupLabel="Elevations (Shadows)"
+            itemValueType="string"
+            valuePlaceholder="0px 1px 3px rgba(0,0,0,0.2)"
             displayUnitDescriptor="CSS boxShadow"
             namePlaceholder="e.g., cardShadow"
           />
