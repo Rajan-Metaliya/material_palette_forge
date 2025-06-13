@@ -1,5 +1,4 @@
 
-
 "use client";
 
 import React, { CSSProperties, useEffect, useState } from 'react';
@@ -83,7 +82,7 @@ const PhoneScreen: React.FC<PhoneScreenProps> = ({ children, colors, activeMode,
 
   return (
     <div
-      className={`w-[280px] h-[550px] rounded-xl shadow-lg overflow-hidden flex flex-col ${className}`}
+      className={`w-[300px] h-[600px] rounded-xl shadow-lg overflow-hidden flex flex-col ${className}`}
       style={{
         backgroundColor: C('surface'),
         border: `1px solid ${C('outline')}`,
@@ -147,7 +146,7 @@ const ThemePreview: React.FC = () => {
           Live preview of your theme in a mock app ({activeMode} mode).
         </CardDescription>
       </CardHeader>
-      <CardContent className="flex flex-col md:flex-row gap-4 items-center justify-center p-4">
+      <CardContent className="flex flex-wrap gap-6 items-start justify-center p-4">
 
         <PhoneScreen colors={colors} activeMode={activeMode}>
           <div className="flex justify-between items-center mb-4">
@@ -234,8 +233,8 @@ const ThemePreview: React.FC = () => {
             <Image
               src="https://placehold.co/300x200.png"
               alt="Monstera plant"
-              width={220}
-              height={150}
+              width={250}
+              height={160}
               data-ai-hint="house plant"
               style={{
                 borderRadius: `${getNumericPropertyValue(properties.borderRadius, 'xl', 24)}px`,
@@ -296,3 +295,6 @@ const ThemePreview: React.FC = () => {
 };
 
 export default ThemePreview;
+
+
+    
