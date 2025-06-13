@@ -1,5 +1,4 @@
 
-
 import type {
   ThemeConfiguration,
   MaterialColors,
@@ -45,66 +44,68 @@ export const FONT_WEIGHT_OPTIONS: { label: string; value: FontWeightValue }[] = 
   { label: 'Black (900)', value: 900 },
 ];
 
+// Updated default colors based on seed #059D66 and new app shell colors
 export const DEFAULT_COLORS: MaterialColors = {
-  seedColor: '#89729B',
-  primary: { light: '#89729B', dark: '#C0B1D0' },
-  secondary: { light: '#72899B', dark: '#B1C0D0' },
-  tertiary: { light: '#9B7289', dark: '#D0B1C0' },
-  error: { light: '#B3261E', dark: '#F2B8B5' },
-  surface: { light: '#F4EFF7', dark: '#2C292E' },
-  onSurface: { light: '#1E1B20', dark: '#E9E0ED' },
+  seedColor: '#059D66', // New seed color
+  primary: { light: '#006D4D', dark: '#82D9B3' },
+  secondary: { light: '#4C6358', dark: '#B5CCBF' },
+  tertiary: { light: '#3E6374', dark: '#A4C8DB' },
+  error: { light: '#BA1A1A', dark: '#FFB4AB' },
+  surface: { light: '#F5FAF8', dark: '#1F2522' },
+  onSurface: { light: '#181D1A', dark: '#E0E3E0' },
 
-  primaryContainer: { light: '#EBDDFA', dark: '#503C60' },
-  onPrimaryContainer: { light: '#2F1545', dark: '#F4E8FF' },
-  secondaryContainer: { light: '#DDECF8', dark: '#3C5060' },
-  onSecondaryContainer: { light: '#152F45', dark: '#E8F4FF' },
-  tertiaryContainer: { light: '#FADDEB', dark: '#603C50' },
-  onTertiaryContainer: { light: '#45152F', dark: '#FFE8F4' },
-  errorContainer: { light: '#F9DEDC', dark: '#8C1D18' },
-  onErrorContainer: { light: '#410E0B', dark: '#FDE9E8' },
+  primaryContainer: { light: '#9EF6CE', dark: '#00523A' },
+  onPrimaryContainer: { light: '#002115', dark: '#9EF6CE' },
+  secondaryContainer: { light: '#CEE9DB', dark: '#354B41' },
+  onSecondaryContainer: { light: '#092017', dark: '#C1E9D5' },
+  tertiaryContainer: { light: '#C2E8FB', dark: '#264B5C' },
+  onTertiaryContainer: { light: '#001F2A', dark: '#C2E8FB' },
+  errorContainer: { light: '#FFDAD6', dark: '#93000A' },
+  onErrorContainer: { light: '#410002', dark: '#FFDAD6' },
 
-  surfaceVariant: { light: '#E9E0ED', dark: '#4A454D' },
-  onSurfaceVariant: { light: '#4A454D', dark: '#CDC5CE' },
+  surfaceVariant: { light: '#DAE5DE', dark: '#3F4943' },
+  onSurfaceVariant: { light: '#3F4943', dark: '#BEC9C2' },
 
-  outline: { light: '#7C757F', dark: '#968F99' },
-  outlineVariant: { light: '#CAC4CF', dark: '#4A454D' },
+  outline: { light: '#707973', dark: '#89938C' },
+  outlineVariant: { light: '#C0C9C1', dark: '#3F4943' },
 
-  shadow: { light: '#000000', dark: '#000000' },
-  scrim: { light: '#000000', dark: '#000000' },
+  shadow: { light: '#000000', dark: '#000000' }, // Typically black with opacity controlled elsewhere
+  scrim: { light: '#000000', dark: '#000000' }, // Typically black with opacity
 
-  inverseSurface: { light: '#332F35', dark: '#E9E0ED' },
-  onInverseSurface: { light: '#F7F0F8', dark: '#1E1B20' },
-  inversePrimary: { light: '#D8BFFF', dark: '#89729B' },
+  inverseSurface: { light: '#2C322E', dark: '#E0E3E0' },
+  onInverseSurface: { light: '#EFF1ED', dark: '#181D1A' },
+  inversePrimary: { light: '#82D9B3', dark: '#006D4D' },
 
-  background: { light: '#F4EFF7', dark: '#221E25' },
-  foreground: { light: '#1E1B20', dark: '#E9E0ED' },
-  accent: { light: '#72899B', dark: '#B1C0D0' },
+  // App Shell Specific Colors (distinct from the M3 theme being designed)
+  background: { light: '#F8F9FA', dark: '#1A1B1E' }, // Neutral app background
+  foreground: { light: '#212529', dark: '#E8EAED' }, // App shell text
+  accent: { light: '#F97316', dark: '#FB923C' },     // Orange accent for UI elements
 };
 
 
 const defaultHeadlineFont = 'Space Grotesk';
 const defaultBodyFont = 'Inter';
-const defaultLightTextColor: string = '#36454F';
-const defaultDarkTextColor: string = '#E9E0ED'; // Matches onSurface.dark
+const defaultLightTextColor: string = '#36454F'; // User specified default
+const defaultDarkTextColor: string = '#E0E3E0'; //  M3 onSurface.dark from green seed
 const defaultTextColorPerStyle: ColorModeValues = { light: defaultLightTextColor, dark: defaultDarkTextColor };
 
 
 export const DEFAULT_MATERIAL_TEXT_STYLES: Record<MaterialTextStyleKey, TextStyleProperties> = {
-  displayLarge: { fontFamily: defaultHeadlineFont, fontSize: 57, fontWeight: 400, letterSpacing: -0.25, lineHeight: 1.12, color: defaultTextColorPerStyle },
-  displayMedium: { fontFamily: defaultHeadlineFont, fontSize: 45, fontWeight: 400, letterSpacing: 0, lineHeight: 1.15, color: defaultTextColorPerStyle },
-  displaySmall: { fontFamily: defaultHeadlineFont, fontSize: 36, fontWeight: 400, letterSpacing: 0, lineHeight: 1.22, color: defaultTextColorPerStyle },
-  headlineLarge: { fontFamily: defaultHeadlineFont, fontSize: 32, fontWeight: 400, letterSpacing: 0, lineHeight: 1.25, color: defaultTextColorPerStyle },
-  headlineMedium: { fontFamily: defaultHeadlineFont, fontSize: 28, fontWeight: 400, letterSpacing: 0, lineHeight: 1.28, color: defaultTextColorPerStyle },
-  headlineSmall: { fontFamily: defaultHeadlineFont, fontSize: 24, fontWeight: 400, letterSpacing: 0, lineHeight: 1.33, color: defaultTextColorPerStyle },
-  titleLarge: { fontFamily: defaultHeadlineFont, fontSize: 22, fontWeight: 400, letterSpacing: 0, lineHeight: 1.27, color: defaultTextColorPerStyle },
-  titleMedium: { fontFamily: defaultBodyFont, fontSize: 16, fontWeight: 500, letterSpacing: 0.15, lineHeight: 1.5, color: defaultTextColorPerStyle },
-  titleSmall: { fontFamily: defaultBodyFont, fontSize: 14, fontWeight: 500, letterSpacing: 0.1, lineHeight: 1.43, color: defaultTextColorPerStyle },
-  bodyLarge: { fontFamily: defaultBodyFont, fontSize: 16, fontWeight: 400, letterSpacing: 0.5, lineHeight: 1.5, color: defaultTextColorPerStyle },
-  bodyMedium: { fontFamily: defaultBodyFont, fontSize: 14, fontWeight: 400, letterSpacing: 0.25, lineHeight: 1.43, color: defaultTextColorPerStyle },
-  bodySmall: { fontFamily: defaultBodyFont, fontSize: 12, fontWeight: 400, letterSpacing: 0.4, lineHeight: 1.33, color: defaultTextColorPerStyle },
-  labelLarge: { fontFamily: defaultBodyFont, fontSize: 14, fontWeight: 500, letterSpacing: 0.1, lineHeight: 1.43, color: defaultTextColorPerStyle },
-  labelMedium: { fontFamily: defaultBodyFont, fontSize: 12, fontWeight: 500, letterSpacing: 0.5, lineHeight: 1.33, color: defaultTextColorPerStyle },
-  labelSmall: { fontFamily: defaultBodyFont, fontSize: 11, fontWeight: 500, letterSpacing: 0.5, lineHeight: 1.45, color: defaultTextColorPerStyle },
+  displayLarge: { fontFamily: defaultHeadlineFont, fontSize: 57, fontWeight: 400, letterSpacing: -0.25, lineHeight: 1.12, color: JSON.parse(JSON.stringify(defaultTextColorPerStyle)) },
+  displayMedium: { fontFamily: defaultHeadlineFont, fontSize: 45, fontWeight: 400, letterSpacing: 0, lineHeight: 1.15, color: JSON.parse(JSON.stringify(defaultTextColorPerStyle)) },
+  displaySmall: { fontFamily: defaultHeadlineFont, fontSize: 36, fontWeight: 400, letterSpacing: 0, lineHeight: 1.22, color: JSON.parse(JSON.stringify(defaultTextColorPerStyle)) },
+  headlineLarge: { fontFamily: defaultHeadlineFont, fontSize: 32, fontWeight: 400, letterSpacing: 0, lineHeight: 1.25, color: JSON.parse(JSON.stringify(defaultTextColorPerStyle)) },
+  headlineMedium: { fontFamily: defaultHeadlineFont, fontSize: 28, fontWeight: 400, letterSpacing: 0, lineHeight: 1.28, color: JSON.parse(JSON.stringify(defaultTextColorPerStyle)) },
+  headlineSmall: { fontFamily: defaultHeadlineFont, fontSize: 24, fontWeight: 400, letterSpacing: 0, lineHeight: 1.33, color: JSON.parse(JSON.stringify(defaultTextColorPerStyle)) },
+  titleLarge: { fontFamily: defaultHeadlineFont, fontSize: 22, fontWeight: 400, letterSpacing: 0, lineHeight: 1.27, color: JSON.parse(JSON.stringify(defaultTextColorPerStyle)) },
+  titleMedium: { fontFamily: defaultBodyFont, fontSize: 16, fontWeight: 500, letterSpacing: 0.15, lineHeight: 1.5, color: JSON.parse(JSON.stringify(defaultTextColorPerStyle)) },
+  titleSmall: { fontFamily: defaultBodyFont, fontSize: 14, fontWeight: 500, letterSpacing: 0.1, lineHeight: 1.43, color: JSON.parse(JSON.stringify(defaultTextColorPerStyle)) },
+  bodyLarge: { fontFamily: defaultBodyFont, fontSize: 16, fontWeight: 400, letterSpacing: 0.5, lineHeight: 1.5, color: JSON.parse(JSON.stringify(defaultTextColorPerStyle)) },
+  bodyMedium: { fontFamily: defaultBodyFont, fontSize: 14, fontWeight: 400, letterSpacing: 0.25, lineHeight: 1.43, color: JSON.parse(JSON.stringify(defaultTextColorPerStyle)) },
+  bodySmall: { fontFamily: defaultBodyFont, fontSize: 12, fontWeight: 400, letterSpacing: 0.4, lineHeight: 1.33, color: JSON.parse(JSON.stringify(defaultTextColorPerStyle)) },
+  labelLarge: { fontFamily: defaultBodyFont, fontSize: 14, fontWeight: 500, letterSpacing: 0.1, lineHeight: 1.43, color: JSON.parse(JSON.stringify(defaultTextColorPerStyle)) },
+  labelMedium: { fontFamily: defaultBodyFont, fontSize: 12, fontWeight: 500, letterSpacing: 0.5, lineHeight: 1.33, color: JSON.parse(JSON.stringify(defaultTextColorPerStyle)) },
+  labelSmall: { fontFamily: defaultBodyFont, fontSize: 11, fontWeight: 500, letterSpacing: 0.5, lineHeight: 1.45, color: JSON.parse(JSON.stringify(defaultTextColorPerStyle)) },
 };
 
 export const DEFAULT_FONTS: ThemeFonts = {
@@ -161,14 +162,14 @@ export const DEFAULT_ELEVATION: CustomStringPropertyItem[] = [
   { name: 'level5', value: '0px 8px 12px 6px rgba(0,0,0,0.15), 0px 4px 4px rgba(0,0,0,0.3)' },
 ];
 
-
+// Define DEFAULT_PROPERTIES before it's used by INITIAL_THEME_CONFIG
 export const DEFAULT_PROPERTIES: ThemeProperties = {
-  spacing: DEFAULT_SPACING,
-  borderRadius: DEFAULT_BORDER_RADIUS,
-  borderWidth: DEFAULT_BORDER_WIDTH,
-  gradients: DEFAULT_GRADIENTS,
-  opacity: DEFAULT_OPACITY,
-  elevation: DEFAULT_ELEVATION,
+  spacing: JSON.parse(JSON.stringify(DEFAULT_SPACING)),
+  borderRadius: JSON.parse(JSON.stringify(DEFAULT_BORDER_RADIUS)),
+  borderWidth: JSON.parse(JSON.stringify(DEFAULT_BORDER_WIDTH)),
+  gradients: JSON.parse(JSON.stringify(DEFAULT_GRADIENTS)),
+  opacity: JSON.parse(JSON.stringify(DEFAULT_OPACITY)),
+  elevation: JSON.parse(JSON.stringify(DEFAULT_ELEVATION)),
 };
 
 export const DEFAULT_CUSTOM_COLORS: CustomColorItem[] = [];
@@ -193,9 +194,15 @@ export const EXTENDED_COLOR_ROLES: (keyof Omit<MaterialColors, 'seedColor' | 'ba
                    key !== 'accent' &&
                    !CORE_COLOR_ROLES.includes(key as any));
 
+// This order also influences the ColorSection UI.
+// 'background', 'foreground', and 'accent' are included here as they are part of MaterialColors type
+// and need to be editable, even if they have specific roles for the app shell.
 export const UI_COLOR_INPUT_ORDER: (keyof Omit<MaterialColors, 'seedColor'>)[] = [
     'primary', 'secondary', 'tertiary', 'error',
-    'surface', 'onSurface', 'background', 'foreground', 'accent',
+    'surface', 'onSurface',
+    'background', // App shell background
+    'foreground', // App shell foreground
+    'accent',     // App shell accent
     'primaryContainer', 'onPrimaryContainer',
     'secondaryContainer', 'onSecondaryContainer',
     'tertiaryContainer', 'onTertiaryContainer',

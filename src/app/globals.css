@@ -6,82 +6,100 @@
 @layer base {
   :root {
     /* --- Light Mode HSL Definitions --- */
-    /* These will be dynamically updated by ThemeContext */
-    /* Primary (Desaturated Purple #89729B) */
-    --primary-light-h: 277; --primary-light-s: 16%; --primary-light-l: 53%;
-    --primary-foreground-light-h: 277; --primary-foreground-light-s: 10%; --primary-foreground-light-l: 95%;
-    
-    /* Background (Light Grayish Purple #F4EFF7) */
-    --background-light-h: 278; --background-light-s: 27%; --background-light-l: 95%;
-    --foreground-light-h: 278; --foreground-light-s: 10%; --foreground-light-l: 20%; /* Darker text for light bg */
+    /* These values should correspond to the light mode of DEFAULT_COLORS in consts.ts */
 
-    /* Card */
-    --card-light-h: 278; --card-light-s: 27%; --card-light-l: 98%;
-    --card-foreground-light-h: 278; --card-foreground-light-s: 10%; --card-foreground-light-l: 20%;
-
-    /* Popover */
-    --popover-light-h: 278; --popover-light-s: 27%; --popover-light-l: 98%;
-    --popover-foreground-light-h: 278; --popover-foreground-light-s: 10%; --popover-foreground-light-l: 20%;
+    /* Primary (from seed #059D66 -> M3 Tone 40 light -> #006D4D) */
+    --primary-light-h: 159; --primary-light-s: 100%; --primary-light-l: 21%;
+    /* Primary Foreground (OnPrimaryContainer of #059D66 -> #002115) */
+    --primary-foreground-light-h: 158; --primary-foreground-light-s: 100%; --primary-foreground-light-l: 7%;
     
-    /* Secondary (Neutral) */
-    --secondary-light-h: 240; --secondary-light-s: 5%; --secondary-light-l: 65%;
-    --secondary-foreground-light-h: 240; --secondary-foreground-light-s: 5%; --secondary-foreground-light-l: 95%;
-    
-    /* Muted */
-    --muted-light-h: 278; --muted-light-s: 15%; --muted-light-l: 88%;
-    --muted-foreground-light-h: 278; --muted-foreground-light-s: 10%; --muted-foreground-light-l: 45%;
+    /* Background (Neutral App Shell Background Light -> #F8F9FA) */
+    --background-light-h: 210; --background-light-s: 17%; --background-light-l: 98%;
+    /* Foreground (Neutral App Shell Text Light -> #212529) */
+    --foreground-light-h: 210; --foreground-light-s: 10%; --foreground-light-l: 15%;
 
-    /* Accent (Soft Blue #72899B) */
-    --accent-light-h: 210; --accent-light-s: 18%; --accent-light-l: 53%;
-    --accent-foreground-light-h: 210; --accent-foreground-light-s: 10%; --accent-foreground-light-l: 95%;
-    
-    /* Destructive */
-    --destructive-light-h: 0; --destructive-light-s: 72%; --destructive-light-l: 51%;
-    --destructive-foreground-light-h: 0; --destructive-foreground-light-s: 0%; --destructive-foreground-light-l: 98%;
+    /* Card (M3 SurfaceVariant from seed #059D66 -> #DAE5DE) */
+    --card-light-h: 150; --card-light-s: 20%; --card-light-l: 88%;
+    /* Card Foreground (M3 OnSurfaceVariant from seed #059D66 -> #3F4943) */
+    --card-foreground-light-h: 151; --card-foreground-light-s: 8%; --card-foreground-light-l: 27%;
 
-    /* Border, Input, Ring */
-    --border-light-h: 278; --border-light-s: 15%; --border-light-l: 80%;
-    --input-light-h: 278; --input-light-s: 15%; --input-light-l: 85%;
-    --ring-light-h: 277; --ring-light-s: 16%; --ring-light-l: 53%; /* Primary for rings */
+    /* Popover (M3 Surface from seed #059D66 -> #F5FAF8) */
+    --popover-light-h: 159; --popover-light-s: 27%; --popover-light-l: 97%;
+    /* Popover Foreground (M3 OnSurface from seed #059D66 -> #181D1A) */
+    --popover-foreground-light-h: 159; --popover-foreground-light-s: 10%; --popover-foreground-light-l: 10%;
+    
+    /* Secondary (M3 Secondary from seed #059D66 -> #4C6358) */
+    --secondary-light-h: 151; --secondary-light-s: 15%; --secondary-light-l: 34%;
+    /* Secondary Foreground (M3 OnSecondaryContainer from seed #059D66 -> #092017) */
+    --secondary-foreground-light-h: 156; --secondary-foreground-light-s: 48%; --secondary-foreground-light-l: 8%;
+    
+    /* Muted (Using Card colors for muted as a sensible default) */
+    --muted-light-h: var(--card-light-h); --muted-light-s: var(--card-light-s); --muted-light-l: var(--card-light-l);
+    --muted-foreground-light-h: var(--card-foreground-light-h); --muted-foreground-light-s: var(--card-foreground-light-s); --muted-foreground-light-l: var(--card-foreground-light-l);
+
+    /* Accent (App Shell Accent Light - Orange -> #F97316) */
+    --accent-light-h: 25; --accent-light-s: 95%; --accent-light-l: 53%;
+    /* Accent Foreground (White for good contrast on orange) */
+    --accent-foreground-light-h: 0; --accent-foreground-light-s: 0%; --accent-foreground-light-l: 100%;
+    
+    /* Destructive (M3 Error from seed #059D66 -> #BA1A1A) */
+    --destructive-light-h: 0; --destructive-light-s: 79%; --destructive-light-l: 41%;
+    /* Destructive Foreground (M3 OnErrorContainer from seed #059D66 -> #410002) */
+    --destructive-foreground-light-h: 356; --destructive-foreground-light-s: 100%; --destructive-foreground-light-l: 13%;
+
+    /* Border (M3 Outline from seed #059D66 -> #707973) */
+    --border-light-h: 154; --border-light-s: 5%; --border-light-l: 46%;
+    /* Input (M3 SurfaceVariant, same as Card -> #DAE5DE) */
+    --input-light-h: var(--card-light-h); --input-light-s: var(--card-light-s); --input-light-l: var(--card-light-l);
+    /* Ring (Primary for rings) */
+    --ring-light-h: var(--primary-light-h); --ring-light-s: var(--primary-light-s); --ring-light-l: var(--primary-light-l);
 
     /* --- Dark Mode HSL Definitions --- */
-    /* These will also be dynamically updated */
-    /* Primary */
-    --primary-dark-h: 277; --primary-dark-s: 16%; --primary-dark-l: 63%;
-    --primary-foreground-dark-h: 277; --primary-foreground-dark-s: 10%; --primary-foreground-dark-l: 15%;
+    /* Primary (from seed #059D66 -> M3 Tone 80 dark -> #82D9B3) */
+    --primary-dark-h: 158; --primary-dark-s: 55%; --primary-dark-l: 70%;
+    /* Primary Foreground (OnPrimaryContainer of #059D66 -> #9EF6CE) */
+    --primary-foreground-dark-h: 158; --primary-foreground-dark-s: 80%; --primary-foreground-dark-l: 79%;
     
-    /* Background */
-    --background-dark-h: 278; --background-dark-s: 10%; --background-dark-l: 15%;
-    --foreground-dark-h: 278; --foreground-dark-s: 10%; --foreground-dark-l: 85%;
+    /* Background (Neutral App Shell Background Dark -> #1A1B1E) */
+    --background-dark-h: 220; --background-dark-s: 7%; --background-dark-l: 11%;
+    /* Foreground (Neutral App Shell Text Dark -> #E8EAED) */
+    --foreground-dark-h: 220; --foreground-dark-s: 6%; --foreground-dark-l: 92%;
 
-    /* Card */
-    --card-dark-h: 278; --card-dark-s: 10%; --card-dark-l: 20%;
-    --card-foreground-dark-h: 278; --card-foreground-dark-s: 10%; --card-foreground-dark-l: 85%;
+    /* Card (M3 SurfaceVariant from seed #059D66 -> #3F4943) */
+    --card-dark-h: 151; --card-dark-s: 8%; --card-dark-l: 27%;
+    /* Card Foreground (M3 OnSurfaceVariant from seed #059D66 -> #BEC9C2) */
+    --card-foreground-dark-h: 150; --card-foreground-dark-s: 18%; --card-foreground-dark-l: 77%;
 
-    /* Popover */
-    --popover-dark-h: 278; --popover-dark-s: 10%; --popover-dark-l: 10%;
-    --popover-foreground-dark-h: 278; --popover-foreground-dark-s: 10%; --popover-foreground-dark-l: 85%;
+    /* Popover (M3 Surface from seed #059D66 -> #1F2522) */
+    --popover-dark-h: 159; --popover-dark-s: 10%; --popover-dark-l: 13%;
+    /* Popover Foreground (M3 OnSurface from seed #059D66 -> #E0E3E0) */
+    --popover-foreground-dark-h: 150; --popover-foreground-dark-s: 8%; --popover-foreground-dark-l: 88%;
 
-    /* Secondary */
-    --secondary-dark-h: 240; --secondary-dark-s: 5%; --secondary-dark-l: 35%;
-    --secondary-foreground-dark-h: 240; --secondary-foreground-dark-s: 5%; --secondary-foreground-dark-l: 95%;
+    /* Secondary (M3 Secondary from seed #059D66 -> #B5CCBF) */
+    --secondary-dark-h: 151; --secondary-dark-s: 23%; --secondary-dark-l: 76%;
+    /* Secondary Foreground (M3 OnSecondaryContainer from seed #059D66 -> #C1E9D5) */
+    --secondary-foreground-dark-h: 153; --secondary-foreground-dark-s: 39%; --secondary-foreground-dark-l: 83%;
 
-    /* Muted */
-    --muted-dark-h: 278; --muted-dark-s: 10%; --muted-dark-l: 25%;
-    --muted-foreground-dark-h: 278; --muted-foreground-dark-s: 10%; --muted-foreground-dark-l: 65%;
+    /* Muted (Using Card colors for muted) */
+    --muted-dark-h: var(--card-dark-h); --muted-dark-s: var(--card-dark-s); --muted-dark-l: var(--card-dark-l);
+    --muted-foreground-dark-h: var(--card-foreground-dark-h); --muted-foreground-dark-s: var(--card-foreground-dark-s); --muted-foreground-dark-l: var(--card-foreground-dark-l);
 
-    /* Accent */
-    --accent-dark-h: 210; --accent-dark-s: 18%; --accent-dark-l: 63%;
-    --accent-foreground-dark-h: 210; --accent-foreground-dark-s: 10%; --accent-foreground-dark-l: 15%;
+    /* Accent (App Shell Accent Dark - Orange -> #FB923C) */
+    --accent-dark-h: 26; --accent-dark-s: 96%; --accent-dark-l: 61%;
+    /* Accent Foreground (Dark text for good contrast on light orange) */
+    --accent-foreground-dark-h: 25; --accent-foreground-dark-s: 80%; --accent-foreground-dark-l: 15%;
 
-    /* Destructive */
-    --destructive-dark-h: 0; --destructive-dark-s: 63%; --destructive-dark-l: 40%;
-    --destructive-foreground-dark-h: 0; --destructive-foreground-dark-s: 0%; --destructive-foreground-dark-l: 98%;
+    /* Destructive (M3 Error from seed #059D66 -> #FFB4AB) */
+    --destructive-dark-h: 6; --destructive-dark-s: 100%; --destructive-dark-l: 83%;
+    /* Destructive Foreground (M3 OnErrorContainer from seed #059D66 -> #FFDAD6) */
+    --destructive-foreground-dark-h: 6; --destructive-foreground-dark-s: 100%; --destructive-foreground-dark-l: 92%;
 
-    /* Border, Input, Ring */
-    --border-dark-h: 278; --border-dark-s: 10%; --border-dark-l: 30%;
-    --input-dark-h: 278; --input-dark-s: 10%; --input-dark-l: 30%;
-    --ring-dark-h: 277; --ring-dark-s: 16%; --ring-dark-l: 63%;
+    /* Border (M3 Outline from seed #059D66 -> #89938C) */
+    --border-dark-h: 150; --border-dark-s: 5%; --border-dark-l: 56%;
+    /* Input (M3 SurfaceVariant, same as Card -> #3F4943) */
+    --input-dark-h: var(--card-dark-h); --input-dark-s: var(--card-dark-s); --input-dark-l: var(--card-dark-l);
+    /* Ring (Primary for rings) */
+    --ring-dark-h: var(--primary-dark-h); --ring-dark-s: var(--primary-dark-s); --ring-dark-l: var(--primary-dark-l);
 
     /* --- Default to Light Mode Variables --- */
     --primary-h: var(--primary-light-h); --primary-s: var(--primary-light-s); --primary-l: var(--primary-light-l);
@@ -125,9 +143,13 @@
     --input: hsl(var(--input-h) var(--input-s) var(--input-l));
     --ring: hsl(var(--ring-h) var(--ring-s) var(--ring-l));
     
-    --radius: 0.5rem;
+    --radius: 0.5rem; /* Default M3-ish radius */
 
+    /* Chart colors are generic, can remain as is or be themed if desired */
     --chart-1: 12 76% 61%; --chart-2: 173 58% 39%; --chart-3: 197 37% 24%; --chart-4: 43 74% 66%; --chart-5: 27 87% 67%;
+    
+    /* Sidebar colors (can be left as is, or updated to match new primary/accent if needed) */
+    /* For now, let's keep them somewhat neutral as they are more for a specific UI component */
     --sidebar-background: 0 0% 98%; --sidebar-foreground: 240 5.3% 26.1%; --sidebar-primary: 240 5.9% 10%; --sidebar-primary-foreground: 0 0% 98%; --sidebar-accent: 240 4.8% 95.9%; --sidebar-accent-foreground: 240 5.9% 10%; --sidebar-border: 220 13% 91%; --sidebar-ring: 217.2 91.2% 59.8%;
   }
 
