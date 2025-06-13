@@ -1,15 +1,59 @@
 
 "use client";
 import React from 'react';
-import { Sun, Moon } from 'lucide-react'; // Palette icon removed
+import { Sun, Moon } from 'lucide-react';
 import { useTheme } from '@/context/ThemeContext';
 import { Button } from '@/components/ui/button';
 
-// Inline SVG for Nonstop IO Logo
-const NonstopIoLogo = () => (
-  <svg width="32" height="32" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg" className="h-8 w-8 mr-2 text-primary">
-    <rect width="100" height="100" rx="10" fill="currentColor"/>
-    <text x="50" y="55" dominantBaseline="middle" textAnchor="middle" fontFamily="Arial, sans-serif" fontSize="60" fontWeight="bold" fill="white">N</text>
+// Updated Inline SVG for Nonstop IO Logo
+const NonstopIoLogo: React.FC = () => (
+  <svg 
+    width="150" 
+    height="32" 
+    viewBox="0 0 150 32" 
+    fill="none" 
+    xmlns="http://www.w3.org/2000/svg" 
+    className="h-8 mr-2" // Adjusted width via viewBox and width attribute
+  >
+    {/* Green rounded square background for N */}
+    <rect width="32" height="32" rx="6" fill="hsl(var(--primary))"/>
+    {/* Stylized N - using paths for a closer look */}
+    <path 
+      d="M9.51062 7.74792V24.011H13.2016V13.8349L18.8483 24.011H22.4287V7.74792H18.7377V17.924L13.091 7.74792H9.51062Z" 
+      fill="white" 
+    />
+    {/* Text "NonStop" */}
+    {/* Using system font as a fallback, styling can be adjusted further if specific font metrics are known */}
+    <text 
+      x="40" 
+      y="23" 
+      fontFamily="Arial, Helvetica, sans-serif" 
+      fontSize="18" 
+      fontWeight="bold" 
+      fill="hsl(var(--foreground))"
+    >
+      Non
+    </text>
+    <text 
+      x="80" // Adjusted x for spacing after "Non"
+      y="23" 
+      fontFamily="Arial, Helvetica, sans-serif" 
+      fontSize="18" 
+      fontWeight="bold" 
+      fill="hsl(var(--primary))" // "S" in primary color
+    >
+      S
+    </text>
+    <text 
+      x="92" // Adjusted x for spacing after "S"
+      y="23" 
+      fontFamily="Arial, Helvetica, sans-serif" 
+      fontSize="18" 
+      fontWeight="bold" 
+      fill="hsl(var(--foreground))"
+    >
+      top
+    </text>
   </svg>
 );
 
@@ -22,7 +66,7 @@ const Header: React.FC = () => {
       <div className="container mx-auto px-4 py-3 flex items-center justify-between">
         <div className="flex items-center">
           <NonstopIoLogo />
-          <h1 className="text-2xl font-headline font-semibold text-foreground">
+          <h1 className="text-xl md:text-2xl font-headline font-semibold text-foreground">
             Material Palette Forge
           </h1>
         </div>
