@@ -15,9 +15,10 @@ import type {
   CustomNumericPropertyItem,
   MaterialTextStyleKey,
   TextStyleProperties,
-  FontWeightValue
+  FontWeightValue,
+  CustomColorItem
 } from '@/types/theme';
-import { INITIAL_THEME_CONFIG, DEFAULT_MATERIAL_TEXT_STYLES, DEFAULT_COLORS, DEFAULT_FONTS } from '@/lib/consts';
+import { INITIAL_THEME_CONFIG, DEFAULT_MATERIAL_TEXT_STYLES, DEFAULT_COLORS, DEFAULT_FONTS, DEFAULT_CUSTOM_COLORS } from '@/lib/consts';
 import { generateMaterialColorsFromSeed, hexToHsl } from '@/lib/colorUtils';
 
 type PropertyGroupKey = keyof Pick<ThemeProperties, 'spacing' | 'borderRadius' | 'borderWidth' | 'opacity' | 'elevation'>;
@@ -33,7 +34,7 @@ interface ThemeContextType {
   updateColor: (colorName: MaterialColorRole, mode: ColorMode, value: string) => void;
   getActiveColorValue: (colorSpec: ColorModeValues) => string;
   generateAndApplyColorsFromSeed: (seedValue: string) => void;
-  
+
   updateMaterialTextStyle: (
     styleName: MaterialTextStyleKey,
     propertyName: keyof TextStyleProperties,
@@ -67,6 +68,12 @@ interface ThemeContextType {
   updateGradient: (index: number, newGradient: Partial<ThemeGradient>) => void;
   addGradient: () => void;
   removeGradient: (index: number) => void;
+
+  addCustomColor: (name?: string, initialLightValue?: string, initialDarkValue?: string) => void;
+  updateCustomColorName: (index: number, newName: string) => void;
+  updateCustomColorValue: (index: number, mode: ColorMode, newValue: string) => void;
+  removeCustomColor: (index: number) => void;
+
   resetTheme: () => void;
   setThemeConfig: (config: ThemeConfiguration) => void;
 }
@@ -75,19 +82,20 @@ const ThemeContext = createContext<ThemeContextType | undefined>(undefined);
 
 export const ThemeProvider = ({ children }: { children: ReactNode }) => {
   const [activeMode, setActiveMode] = useState<ColorMode>('light');
-  
+
   const [themeConfig, setThemeConfigInternal] = useState<ThemeConfiguration>(() => {
     const initialSeed = INITIAL_THEME_CONFIG.colors.seedColor;
     const generatedM3Colors = generateMaterialColorsFromSeed(initialSeed);
     return {
       ...INITIAL_THEME_CONFIG,
       colors: {
-        ...INITIAL_THEME_CONFIG.colors, 
-        ...generatedM3Colors, 
+        ...INITIAL_THEME_CONFIG.colors,
+        ...generatedM3Colors,
         seedColor: initialSeed,
       },
       fonts: JSON.parse(JSON.stringify(INITIAL_THEME_CONFIG.fonts)),
       properties: JSON.parse(JSON.stringify(INITIAL_THEME_CONFIG.properties)),
+      customColors: JSON.parse(JSON.stringify(INITIAL_THEME_CONFIG.customColors)),
     };
   });
 
@@ -111,23 +119,23 @@ export const ThemeProvider = ({ children }: { children: ReactNode }) => {
     }
 
     const shadcnColorMap: Record<string, MaterialColorRole | undefined> = {
-      'primary': 'primary', 'primary-foreground': 'onPrimaryContainer', 
+      'primary': 'primary', 'primary-foreground': 'onPrimaryContainer',
       'secondary': 'secondary', 'secondary-foreground': 'onSecondaryContainer',
-      'background': 'background', 'foreground': 'onSurface', 
-      'card': 'surfaceVariant', 'card-foreground': 'onSurfaceVariant', 
-      'popover': 'surface', 'popover-foreground': 'onSurface', 
-      'muted': 'surfaceVariant', 'muted-foreground': 'onSurfaceVariant', 
-      'accent': 'accent', 'accent-foreground': 'onPrimary', 
+      'background': 'background', 'foreground': 'onSurface',
+      'card': 'surfaceVariant', 'card-foreground': 'onSurfaceVariant',
+      'popover': 'surface', 'popover-foreground': 'onSurface',
+      'muted': 'surfaceVariant', 'muted-foreground': 'onSurfaceVariant',
+      'accent': 'accent', 'accent-foreground': 'onPrimary',
       'destructive': 'error', 'destructive-foreground': 'onErrorContainer',
       'border': 'outline',
-      'input': 'surfaceVariant', 
-      'ring': 'primary', 
+      'input': 'surfaceVariant',
+      'ring': 'primary',
     };
-    
+
     (Object.keys(shadcnColorMap) as (keyof typeof shadcnColorMap)[]).forEach(cssVarBase => {
       const roleName = shadcnColorMap[cssVarBase];
       if (roleName && themeConfig.colors[roleName]) {
-        const colorSpec = themeConfig.colors[roleName] as ColorModeValues | undefined; 
+        const colorSpec = themeConfig.colors[roleName] as ColorModeValues | undefined;
         if (colorSpec && typeof colorSpec === 'object' && 'light' in colorSpec && 'dark' in colorSpec) {
           const lightHsl = hexToHsl(colorSpec.light);
           const darkHsl = hexToHsl(colorSpec.dark);
@@ -170,7 +178,7 @@ export const ThemeProvider = ({ children }: { children: ReactNode }) => {
       return {
         ...prevConfig,
         colors: {
-          ...prevConfig.colors, 
+          ...prevConfig.colors,
           ...generatedM3Colors,
           seedColor: seedValue,
         },
@@ -197,7 +205,7 @@ export const ThemeProvider = ({ children }: { children: ReactNode }) => {
         } else if (propertyName !== 'color') {
           (currentStyle[propertyName] as any) = value;
         }
-        
+
         newMaterialTextStyles[styleName] = currentStyle;
         return {
           ...prevConfig,
@@ -220,10 +228,10 @@ export const ThemeProvider = ({ children }: { children: ReactNode }) => {
           ...prevConfig.fonts.customTextStyles,
           {
             name: name + (prevConfig.fonts.customTextStyles.length + 1),
-            style: { 
+            style: {
               ...DEFAULT_MATERIAL_TEXT_STYLES.bodyMedium, // Base style
               color: JSON.parse(JSON.stringify(DEFAULT_MATERIAL_TEXT_STYLES.bodyMedium.color)) // Deep copy default color
-            }, 
+            },
           },
         ],
       },
@@ -242,7 +250,7 @@ export const ThemeProvider = ({ children }: { children: ReactNode }) => {
       };
     });
   }, [updateThemeConfigState]);
-  
+
   const updateCustomTextStyleProperty = useCallback(
     (
       index: number,
@@ -363,20 +371,65 @@ export const ThemeProvider = ({ children }: { children: ReactNode }) => {
     }));
   }, [updateThemeConfigState]);
 
+  // Custom Colors Management
+  const addCustomColor = useCallback((name: string = 'newCustomColor', initialLightValue: string = '#CCCCCC', initialDarkValue: string = '#333333') => {
+    updateThemeConfigState(prevConfig => ({
+      ...prevConfig,
+      customColors: [
+        ...prevConfig.customColors,
+        {
+          name: name + (prevConfig.customColors.length + 1),
+          value: { light: initialLightValue, dark: initialDarkValue },
+        },
+      ],
+    }));
+  }, [updateThemeConfigState]);
+
+  const updateCustomColorName = useCallback((index: number, newName: string) => {
+    updateThemeConfigState(prevConfig => {
+      const newCustomColors = [...prevConfig.customColors];
+      if (newCustomColors[index]) {
+        newCustomColors[index] = { ...newCustomColors[index], name: newName };
+      }
+      return { ...prevConfig, customColors: newCustomColors };
+    });
+  }, [updateThemeConfigState]);
+
+  const updateCustomColorValue = useCallback((index: number, mode: ColorMode, newValue: string) => {
+    updateThemeConfigState(prevConfig => {
+      const newCustomColors = [...prevConfig.customColors];
+      if (newCustomColors[index]) {
+        const currentColorValue = { ...newCustomColors[index].value };
+        currentColorValue[mode] = newValue;
+        newCustomColors[index] = { ...newCustomColors[index], value: currentColorValue };
+      }
+      return { ...prevConfig, customColors: newCustomColors };
+    });
+  }, [updateThemeConfigState]);
+
+  const removeCustomColor = useCallback((index: number) => {
+    updateThemeConfigState(prevConfig => ({
+      ...prevConfig,
+      customColors: prevConfig.customColors.filter((_, i) => i !== index),
+    }));
+  }, [updateThemeConfigState]);
+
+
   const resetTheme = useCallback(() => {
     const initialSeed = INITIAL_THEME_CONFIG.colors.seedColor;
     const generatedM3Colors = generateMaterialColorsFromSeed(initialSeed);
     updateThemeConfigState({
       ...INITIAL_THEME_CONFIG,
       colors: {
-        ...INITIAL_THEME_CONFIG.colors, 
-        ...generatedM3Colors,         
+        ...INITIAL_THEME_CONFIG.colors,
+        ...generatedM3Colors,
         seedColor: initialSeed,
       },
-      fonts: JSON.parse(JSON.stringify(INITIAL_THEME_CONFIG.fonts)), // Ensures deep copy
-      properties: JSON.parse(JSON.stringify(INITIAL_THEME_CONFIG.properties)), // Ensures deep copy
+      fonts: JSON.parse(JSON.stringify(INITIAL_THEME_CONFIG.fonts)),
+      properties: JSON.parse(JSON.stringify(INITIAL_THEME_CONFIG.properties)),
+      customColors: JSON.parse(JSON.stringify(INITIAL_THEME_CONFIG.customColors)),
     });
-    setActiveMode('light'); 
+    setActiveMode('light');
   }, [updateThemeConfigState]);
 
   const setContextThemeConfig = useCallback((newConfig: ThemeConfiguration) => {
@@ -403,6 +456,10 @@ export const ThemeProvider = ({ children }: { children: ReactNode }) => {
       updateGradient,
       addGradient,
       removeGradient,
+      addCustomColor,
+      updateCustomColorName,
+      updateCustomColorValue,
+      removeCustomColor,
       resetTheme,
       setThemeConfig: setContextThemeConfig
     }}>

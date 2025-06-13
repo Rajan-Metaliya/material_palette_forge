@@ -30,19 +30,19 @@ export interface MaterialColors {
   inverseSurface: ColorModeValues;
   onInverseSurface: ColorModeValues;
   inversePrimary: ColorModeValues;
-  background?: ColorModeValues; 
-  foreground?: ColorModeValues; 
-  accent?: ColorModeValues; 
+  background?: ColorModeValues;
+  foreground?: ColorModeValues;
+  accent?: ColorModeValues;
 }
 
 export type FontWeightValue = 100 | 200 | 300 | 400 | 500 | 600 | 700 | 800 | 900 | 'normal' | 'bold';
 
 export interface TextStyleProperties {
   fontFamily: string;
-  fontSize: number; 
+  fontSize: number;
   fontWeight: FontWeightValue;
-  letterSpacing: number; 
-  lineHeight?: number; 
+  letterSpacing: number;
+  lineHeight?: number;
   color?: ColorModeValues; // Optional color per text style
 }
 
@@ -63,12 +63,12 @@ export interface ThemeFonts {
 
 export interface CustomStringPropertyItem {
   name: string;
-  value: string; 
+  value: string;
 }
 
 export interface CustomNumericPropertyItem {
   name: string;
-  value: number; 
+  value: number;
 }
 
 export type ThemeSpacing = CustomNumericPropertyItem[];
@@ -84,7 +84,7 @@ export interface ThemeGradient {
   direction?: string;
   shape?: string;
   extent?: string;
-  colors: string[]; 
+  colors: string[];
 }
 
 
@@ -97,8 +97,14 @@ export interface ThemeProperties {
   elevation: ThemeElevation;
 }
 
+export interface CustomColorItem {
+  name: string;
+  value: ColorModeValues;
+}
+
 export interface ThemeConfiguration {
   colors: MaterialColors;
   fonts: ThemeFonts;
   properties: ThemeProperties;
+  customColors: CustomColorItem[];
 }

@@ -1,6 +1,7 @@
 
-import type { ThemeConfiguration, MaterialColors, ThemeGradient, CustomStringPropertyItem, CustomNumericPropertyItem, TextStyleProperties, MaterialTextStyleKey, FontWeightValue, ColorModeValues } from '@/types/theme';
-import { COMMON_WEB_FONTS } from './consts';
+
+import type { ThemeConfiguration, MaterialColors, ThemeGradient, CustomStringPropertyItem, CustomNumericPropertyItem, TextStyleProperties, MaterialTextStyleKey, FontWeightValue, ColorModeValues, CustomColorItem } from '@/types/theme';
+import { COMMON_WEB_FONTS, DEFAULT_COLORS } from './consts';
 
 function toFlutterColor(hex: string): string {
   if (!hex || hex.length < 4) return `Color(0xFF000000)`; // Default to black if invalid
@@ -13,7 +14,7 @@ function sanitizeCamelCase(name: string): string {
   sanitized = sanitized
     .replace(/[\s_-]+(.)?/g, (_, c) => (c ? c.toUpperCase() : '')) // Convert to camelCase
     .replace(/^(.)/, (c) => c.toLowerCase()); // Ensure first char is lowercase
-  
+
   if (sanitized.match(/^[^a-zA-Z]/) && !sanitized.match(/^_[a-zA-Z]/)) { // if starts with non-alpha (and not _alpha)
     sanitized = 'prop' + sanitized.replace(/^[^a-zA-Z0-9]/, ''); // Prepend 'prop' and remove leading non-alphanum if any
      if (sanitized.length > 4 && sanitized[4] === sanitized[4].toUpperCase()) {
@@ -43,7 +44,7 @@ function mapFontWeightToFlutter(weight: FontWeightValue): string {
   return 'FontWeight.w400';
 }
 
-function generateTextStyleDart(style: TextStyleProperties, mode: 'light' | 'dark'): string {
+function generateTextStyleDart(style: TextStyleProperties, mode: 'light' | 'dark', onSurfaceColor: string): string {
   const parts = [
     `fontFamily: '${style.fontFamily}'`,
     `fontSize: ${style.fontSize.toFixed(1)}`,
@@ -53,9 +54,11 @@ function generateTextStyleDart(style: TextStyleProperties, mode: 'light' | 'dark
   if (style.lineHeight !== undefined) {
     parts.push(`height: ${style.lineHeight.toFixed(2)}`);
   }
-  if (style.color && style.color[mode]) {
-    parts.push(`color: ${toFlutterColor(style.color[mode])}`);
-  }
+
+  // Use style-specific color if defined, otherwise fallback to onSurface for the current mode
+  const textColor = style.color?.[mode] ? toFlutterColor(style.color[mode]) : toFlutterColor(onSurfaceColor);
+  parts.push(`color: ${textColor}`);
+
   return `const TextStyle(\n      ${parts.join(',\n      ')},\n    )`;
 }
 
@@ -63,7 +66,8 @@ function generatePropertyExtensionClass(
   className: string,
   properties: Array<CustomNumericPropertyItem | CustomStringPropertyItem>,
   valueTypeInDart: 'double' | 'String',
-  valueParserForDartInstance: (value: string | number) => string
+  valueParserForDartInstance: (value: string | number) => string,
+  modeSpecificInstanceName?: string
 ): string {
   const props = properties.map(p => `  final ${valueTypeInDart} ${sanitizeCamelCase(p.name)};`).join('\n');
   const constructorArgs = properties.map(p => `    required this.${sanitizeCamelCase(p.name)},`).join('\n');
@@ -76,6 +80,8 @@ function generatePropertyExtensionClass(
     }
     return `      ${varName}: t < 0.5 ? this.${varName} : other.${varName},`;
   }).join('\n');
+
+  const instanceName = modeSpecificInstanceName || `_${className.toLowerCase().replace(/\s+/g, '')}`;
   const instanceArgs = properties.map(p => `      ${sanitizeCamelCase(p.name)}: ${valueParserForDartInstance(p.value)},`).join('\n');
 
   return `
@@ -107,7 +113,7 @@ ${lerpLogic}
   }
 }
 
-final _${className.toLowerCase().replace(/\s+/g, '')} = ${className}(
+final ${instanceName} = ${className}(
 ${instanceArgs}
 );
 `;
@@ -118,19 +124,19 @@ function generateColorSchemeEntries(colors: MaterialColors, mode: 'light' | 'dar
   return `
     brightness: Brightness.${mode},
     primary: ${toFlutterColor(C('primary'))},
-    onPrimary: ${toFlutterColor(C('onPrimaryContainer'))}, 
+    onPrimary: ${toFlutterColor(colors.onPrimaryContainer![mode])},
     primaryContainer: ${toFlutterColor(C('primaryContainer'))},
     onPrimaryContainer: ${toFlutterColor(C('onPrimaryContainer'))},
     secondary: ${toFlutterColor(C('secondary'))},
-    onSecondary: ${toFlutterColor(C('onSecondaryContainer'))},
+    onSecondary: ${toFlutterColor(colors.onSecondaryContainer![mode])},
     secondaryContainer: ${toFlutterColor(C('secondaryContainer'))},
     onSecondaryContainer: ${toFlutterColor(C('onSecondaryContainer'))},
     tertiary: ${toFlutterColor(C('tertiary'))},
-    onTertiary: ${toFlutterColor(C('onTertiaryContainer'))},
+    onTertiary: ${toFlutterColor(colors.onTertiaryContainer![mode])},
     tertiaryContainer: ${toFlutterColor(C('tertiaryContainer'))},
     onTertiaryContainer: ${toFlutterColor(C('onTertiaryContainer'))},
     error: ${toFlutterColor(C('error'))},
-    onError: ${toFlutterColor(C('onErrorContainer'))},
+    onError: ${toFlutterColor(colors.onErrorContainer![mode])},
     errorContainer: ${toFlutterColor(C('errorContainer'))},
     onErrorContainer: ${toFlutterColor(C('onErrorContainer'))},
     surface: ${toFlutterColor(C('surface'))},
@@ -139,33 +145,30 @@ function generateColorSchemeEntries(colors: MaterialColors, mode: 'light' | 'dar
     onSurfaceVariant: ${toFlutterColor(C('onSurfaceVariant'))},
     outline: ${toFlutterColor(C('outline'))},
     outlineVariant: ${toFlutterColor(C('outlineVariant'))},
-    shadow: ${toFlutterColor(colors.shadow[mode])}, 
+    shadow: ${toFlutterColor(colors.shadow[mode])},
     scrim: ${toFlutterColor(colors.scrim[mode])},
     inverseSurface: ${toFlutterColor(C('inverseSurface'))},
     onInverseSurface: ${toFlutterColor(C('onInverseSurface'))},
     inversePrimary: ${toFlutterColor(C('inversePrimary'))},
-    surfaceTint: ${toFlutterColor(C('primary'))}, 
+    surfaceTint: ${toFlutterColor(C('primary'))},
   `;
 }
 
 
 export function generateFlutterCode(theme: ThemeConfiguration): string {
-  const { colors, fonts, properties } = theme;
+  const { colors, fonts, properties, customColors } = theme;
 
   const numericValueParser = (v: string | number) => typeof v === 'number' ? v.toFixed(1) : parseFloat(v.toString()).toFixed(1);
   const stringValueParser = (v: string | number) => `'${v.toString().replace(/'/g, "\\'")}'`;
 
-  const spacingClass = generatePropertyExtensionClass('AppSpacing', properties.spacing, 'double', numericValueParser);
-  const borderRadiusClass = generatePropertyExtensionClass('AppBorderRadius', properties.borderRadius, 'double', numericValueParser);
-  const borderWidthClass = generatePropertyExtensionClass('AppBorderWidth', properties.borderWidth, 'double', numericValueParser);
-  const opacityClass = generatePropertyExtensionClass('AppOpacity', properties.opacity, 'double', numericValueParser);
-  const elevationClass = generatePropertyExtensionClass('AppElevation', properties.elevation, 'String', stringValueParser);
+  const spacingClass = generatePropertyExtensionClass('AppSpacing', properties.spacing, 'double', numericValueParser, '_appspacing');
+  const borderRadiusClass = generatePropertyExtensionClass('AppBorderRadius', properties.borderRadius, 'double', numericValueParser, '_appborderradius');
+  const borderWidthClass = generatePropertyExtensionClass('AppBorderWidth', properties.borderWidth, 'double', numericValueParser, '_appborderwidth');
+  const opacityClass = generatePropertyExtensionClass('AppOpacity', properties.opacity, 'double', numericValueParser, '_appopacity');
+  const elevationClass = generatePropertyExtensionClass('AppElevation', properties.elevation, 'String', stringValueParser, '_appelevation');
 
   const gradientDataInstances = properties.gradients.map(g => {
-    const resolvedGradientColors = g.colors.map(hexColorRefOrActual => {
-        return toFlutterColor(hexColorRefOrActual);
-    }).join(', ');
-
+    const resolvedGradientColors = g.colors.map(toFlutterColor).join(', ');
     return `    AppGradientData(
       name: '${g.name.replace(/'/g, "\\'")}',
       type: '${g.type}',
@@ -175,7 +178,7 @@ export function generateFlutterCode(theme: ThemeConfiguration): string {
       colors: [${resolvedGradientColors}],
     )`;
   }).join(',\n');
-  
+
   const _appgradientsInstance = `
 final _appgradients = AppGradients(
   gradients: [
@@ -183,11 +186,11 @@ ${gradientDataInstances}
   ],
 );`;
 
-
   const generateTextThemeEntries = (mode: 'light' | 'dark'): string => {
+    const onSurfaceColor = colors.onSurface[mode];
     return (Object.keys(fonts.materialTextStyles) as MaterialTextStyleKey[]).map(key => {
       const style = fonts.materialTextStyles[key];
-      return `      ${key}: ${generateTextStyleDart(style, mode)},`;
+      return `      ${key}: ${generateTextStyleDart(style, mode, onSurfaceColor)},`;
     }).join('\n');
   };
 
@@ -197,7 +200,8 @@ ${gradientDataInstances}
   let customTextStylesExtension = '';
   if (fonts.customTextStyles.length > 0) {
     const generateCustomStyleInstanceArgs = (mode: 'light' | 'dark'): string => {
-      return fonts.customTextStyles.map(cs => `      ${sanitizeCamelCase(cs.name)}: ${generateTextStyleDart(cs.style, mode)},`).join('\n');
+      const onSurfaceColor = colors.onSurface[mode];
+      return fonts.customTextStyles.map(cs => `      ${sanitizeCamelCase(cs.name)}: ${generateTextStyleDart(cs.style, mode, onSurfaceColor)},`).join('\n');
     };
 
     const customStyleProps = fonts.customTextStyles.map(cs => `  final TextStyle ${sanitizeCamelCase(cs.name)};`).join('\n');
@@ -205,7 +209,7 @@ ${gradientDataInstances}
     const customStyleCopyWithArgs = fonts.customTextStyles.map(cs => `TextStyle? ${sanitizeCamelCase(cs.name)},`).join('');
     const customStyleCopyWithReturn = fonts.customTextStyles.map(cs => `      ${sanitizeCamelCase(cs.name)}: ${sanitizeCamelCase(cs.name)} ?? this.${sanitizeCamelCase(cs.name)},`).join('\n');
     const customStyleLerpLogic = fonts.customTextStyles.map(cs => `      ${sanitizeCamelCase(cs.name)}: TextStyle.lerp(this.${sanitizeCamelCase(cs.name)}, other.${sanitizeCamelCase(cs.name)}, t)!,`).join('\n');
-    
+
     customTextStylesExtension = `
 @immutable
 class AppTextStyles extends ThemeExtension<AppTextStyles> {
@@ -231,7 +235,6 @@ ${customStyleLerpLogic}
   }
 }
 
-// Instances for light and dark modes
 final _apptextstylesLight = AppTextStyles(
 ${generateCustomStyleInstanceArgs('light')}
 );
@@ -239,6 +242,52 @@ final _apptextstylesDark = AppTextStyles(
 ${generateCustomStyleInstanceArgs('dark')}
 );`;
   }
+
+  let appCustomColorsExtension = '';
+  if (customColors.length > 0) {
+    const customColorProps = customColors.map(cc => `  final Color ${sanitizeCamelCase(cc.name)};`).join('\n');
+    const customColorConstructorArgs = customColors.map(cc => `    required this.${sanitizeCamelCase(cc.name)},`).join('\n');
+    const customColorCopyWithArgs = customColors.map(cc => `Color? ${sanitizeCamelCase(cc.name)},`).join('');
+    const customColorCopyWithReturn = customColors.map(cc => `      ${sanitizeCamelCase(cc.name)}: ${sanitizeCamelCase(cc.name)} ?? this.${sanitizeCamelCase(cc.name)},`).join('\n');
+    const customColorLerpLogic = customColors.map(cc => `      ${sanitizeCamelCase(cc.name)}: Color.lerp(this.${sanitizeCamelCase(cc.name)}, other.${sanitizeCamelCase(cc.name)}, t)!,`).join('\n');
+
+    const generateCustomColorInstanceArgs = (mode: 'light' | 'dark'): string => {
+        return customColors.map(cc => `      ${sanitizeCamelCase(cc.name)}: ${toFlutterColor(cc.value[mode])},`).join('\n');
+    };
+
+    appCustomColorsExtension = `
+@immutable
+class AppCustomColors extends ThemeExtension<AppCustomColors> {
+  const AppCustomColors({
+${customColorConstructorArgs}
+  });
+
+${customColorProps}
+
+  @override
+  AppCustomColors copyWith({ ${customColorCopyWithArgs} }) {
+    return AppCustomColors(
+${customColorCopyWithReturn}
+    );
+  }
+
+  @override
+  AppCustomColors lerp(ThemeExtension<AppCustomColors>? other, double t) {
+    if (other is! AppCustomColors) return this;
+    return AppCustomColors(
+${customColorLerpLogic}
+    );
+  }
+}
+
+final _appcustomcolorsLight = AppCustomColors(
+${generateCustomColorInstanceArgs('light')}
+);
+final _appcustomcolorsDark = AppCustomColors(
+${generateCustomColorInstanceArgs('dark')}
+);`;
+  }
+
 
   const generateExtensionsList = (mode: 'light' | 'dark'): string => {
     const extensions = [
@@ -248,29 +297,30 @@ ${generateCustomStyleInstanceArgs('dark')}
     if (fonts.customTextStyles.length > 0) {
       extensions.push(mode === 'light' ? '_apptextstylesLight' : '_apptextstylesDark');
     }
+    if (customColors.length > 0) {
+      extensions.push(mode === 'light' ? '_appcustomcolorsLight' : '_appcustomcolorsDark');
+    }
     return extensions.map(ext => `        ${ext},`).join('\n');
   }
-  
+
   const lightExtensionsString = generateExtensionsList('light');
   const darkExtensionsString = generateExtensionsList('dark');
-  
+
   const lightColorScheme = generateColorSchemeEntries(colors, 'light');
   const darkColorScheme = generateColorSchemeEntries(colors, 'dark');
 
   return `// lib/theme/app_theme.dart
 import 'package:flutter/material.dart';
 import 'dart:ui' show lerpDouble;
-import 'dart:math' show pi; 
+import 'dart:math' show pi;
 
 // Generated by Material Palette Forge
 
-// Helper function (if still needed for elevation or manual parsing elsewhere)
 double parseUnitValue(String value) {
   if (value.isEmpty) return 0.0;
-  // Attempt to remove common units and parse. This is a simplified approach.
   final cleanValue = value.replaceAll(RegExp(r'(px|em|rem|%|pt|pc|in|cm|mm|ex|ch|vw|vh|vmin|vmax|deg)'), '').trim();
   final parsed = double.tryParse(cleanValue);
-  return parsed ?? 0.0; // Return 0.0 if parsing fails
+  return parsed ?? 0.0;
 }
 
 // --- Custom Theme Extensions ---
@@ -280,6 +330,7 @@ ${borderWidthClass}
 ${opacityClass}
 ${elevationClass}
 ${customTextStylesExtension}
+${appCustomColorsExtension}
 
 @immutable
 class AppGradientData {
@@ -311,8 +362,7 @@ class AppGradientData {
       }
       return angle != null ? LinearGradient(colors: colors, transform: GradientRotation(angle)) : LinearGradient(colors: colors, begin: begin, end: end);
     } else if (type == 'radial') {
-      // Basic radial gradient, Figma tokens might need more specific parsing for position/extent
-      return RadialGradient(colors: colors, center: Alignment.center, radius: 0.5); 
+      return RadialGradient(colors: colors, center: Alignment.center, radius: 0.5);
     }
     return null;
   }
@@ -335,7 +385,7 @@ class AppTheme {
       bodyColor: colorScheme.onSurface,
       displayColor: colorScheme.onSurface,
     );
-    final defaultCardBorderRadius = _appborderradius.md; // Example access
+    final defaultCardBorderRadius = _appborderradius.md;
 
     return ThemeData(
       useMaterial3: true,
@@ -344,11 +394,11 @@ class AppTheme {
       extensions: extensions,
       cardTheme: CardTheme(
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(defaultCardBorderRadius)),
-        color: colorScheme.surfaceContainerHighest, // M3 recommendation
+        color: colorScheme.surfaceContainerHighest,
         surfaceTintColor: colorScheme.surfaceTint,
-        elevation: _appelevation.level1.isNotEmpty ? parseUnitValue(_appelevation.level1.split('px')[0]) : 1.0, // Basic parsing for elevation
+        elevation: _appelevation.level1.isNotEmpty ? parseUnitValue(_appelevation.level1.split('px')[0]) : 1.0,
       ),
-      buttonTheme: ButtonThemeData( // Legacy, but can set some defaults
+      buttonTheme: ButtonThemeData(
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(_appborderradius.full)),
         padding: EdgeInsets.symmetric(horizontal: _appspacing.lg, vertical: _appspacing.sm),
       ),
@@ -368,9 +418,8 @@ class AppTheme {
         border: OutlineInputBorder(borderRadius: BorderRadius.circular(_appborderradius.sm), borderSide: BorderSide(color: colorScheme.outline)),
         enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(_appborderradius.sm), borderSide: BorderSide(color: colorScheme.outline)),
         focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(_appborderradius.sm), borderSide: BorderSide(color: colorScheme.primary, width: _appborderwidth.medium)),
-        filled: true, fillColor: colorScheme.surfaceContainerHighest, // M3 uses surfaceContainerHighest or similar
+        filled: true, fillColor: colorScheme.surfaceContainerHighest,
       ),
-      // Add other component themes as needed
     );
   }
 
@@ -404,11 +453,12 @@ ${darkExtensionsString.trimEnd()}
 }
 
 export function generateJson(theme: ThemeConfiguration): string {
-  const themeCopy = JSON.parse(JSON.stringify(theme));
+  const themeCopy = JSON.parse(JSON.stringify(theme)); // Deep copy to avoid modifying original
+  // The customColors array is already at the root of themeCopy.
   return JSON.stringify(themeCopy, null, 2);
 }
 
-// Helper to parse a CSS box-shadow string (simplified for single shadow)
+
 interface ParsedShadow {
   offsetX: string;
   offsetY: string;
@@ -420,54 +470,28 @@ interface ParsedShadow {
 
 function parseBoxShadowString(shadowString: string): ParsedShadow | null {
   if (!shadowString || shadowString.toLowerCase() === 'none') return null;
-
   let input = shadowString.trim();
   let inset = false;
-
   if (input.startsWith('inset')) {
     inset = true;
     input = input.substring(5).trim();
   }
-
-  // Regex to find color (hex, rgb, rgba, hsl, hsla, keywords) at the end or start
-  // This is very hard to make perfect. For now, we assume color is at the end if not specified.
-  // A common pattern is lengths followed by color.
   const colorMatch = input.match(/(#[0-9a-fA-F]{3,8}|rgba?\([\d.,\s%/]+\)|hsla?\([\d.,\s%/]+\)|\b[a-zA-Z]+\b)$/i);
-  let color = 'rgba(0,0,0,0.1)'; // Default color
+  let color = 'rgba(0,0,0,0.1)';
   let partsWithoutColor = input;
-
   if (colorMatch) {
     color = colorMatch[0];
     partsWithoutColor = input.substring(0, input.lastIndexOf(color)).trim();
   }
-  
   const lengthParts = partsWithoutColor.split(/\s+/).filter(Boolean);
-
   let offsetX = '0px', offsetY = '0px', blur = '0px', spread = '0px';
-
-  if (lengthParts.length >= 2) { // offsetX, offsetY
-    offsetX = lengthParts[0];
-    offsetY = lengthParts[1];
-  }
-  if (lengthParts.length >= 3) { // blur
-    blur = lengthParts[2];
-  }
-  if (lengthParts.length >= 4) { // spread
-    spread = lengthParts[3];
-  }
-  
-  // Basic validation that they look like length units (very simplified)
+  if (lengthParts.length >= 2) { offsetX = lengthParts[0]; offsetY = lengthParts[1]; }
+  if (lengthParts.length >= 3) { blur = lengthParts[2]; }
+  if (lengthParts.length >= 4) { spread = lengthParts[3]; }
   const isLength = (s: string) => s && /^-?\d*(\.\d+)?(px|em|rem|%|pt|pc|in|cm|mm|ex|ch|vw|vh|vmin|vmax)?$/i.test(s);
-
-  if (!isLength(offsetX) || !isLength(offsetY)) {
-    // console.warn("Could not reliably parse shadow string lengths:", shadowString, "Got:", {offsetX, offsetY, blur, spread});
-    // Fallback for robustnes, though may not be accurate.
-    return { offsetX: '0px', offsetY: '1px', blur: '3px', spread: '0px', color: 'rgba(0,0,0,0.1)', inset };
-  }
-  if (blur && !isLength(blur)) blur = '0px'; // if blur exists but is not a length, default it
-  if (spread && !isLength(spread)) spread = '0px'; // if spread exists but is not a length, default it
-
-
+  if (!isLength(offsetX) || !isLength(offsetY)) return { offsetX: '0px', offsetY: '1px', blur: '3px', spread: '0px', color: 'rgba(0,0,0,0.1)', inset };
+  if (blur && !isLength(blur)) blur = '0px';
+  if (spread && !isLength(spread)) spread = '0px';
   return { offsetX, offsetY, blur, spread, color, inset };
 }
 
@@ -495,47 +519,55 @@ function mapFontWeightToFigmaString(weight: FontWeightValue): string {
 }
 
 function generateTokensForMode(theme: ThemeConfiguration, mode: 'light' | 'dark'): any {
-  const { colors, fonts, properties } = theme;
-  const modeTokens: any = {};
+  const { colors, fonts, properties, customColors } = theme;
+  const tokens: any = {
+    colors: { "$type": "color" },
+    dimensions: { "$type": "dimension" },
+    text: {
+      fonts: { "$type": "fontFamily" },
+      weights: { "$type": "fontWeight" },
+      lineHeights: { "$type": "number" }, // Using "number" as per example for lineHeights
+      typography: { "$type": "typography" },
+    },
+    borders: { "$type": "border", styles: { "$type": "strokeStyle", solid: { "$value": "solid" } } },
+    shadows: { "$type": "shadow" },
+    opacity: { "$type": "opacity" }, // Changed from "number" to "opacity" for semantic correctness
+  };
 
-  // --- Colors ---
-  modeTokens.colors = { "$type": "color" };
+  // --- Material Colors ---
   for (const key in colors) {
     if (key === 'seedColor') continue;
     const roleKey = key as keyof MaterialColors;
     const colorSpec = colors[roleKey] as ColorModeValues | undefined;
     if (colorSpec && typeof colorSpec === 'object' && colorSpec[mode]) {
-      modeTokens.colors[sanitizeCamelCase(roleKey)] = { "$value": colorSpec[mode] };
+      tokens.colors[sanitizeCamelCase(roleKey)] = { "$value": colorSpec[mode] };
     }
   }
-  modeTokens.colors.black = { "$value": "#000000" };
-  modeTokens.colors.white = { "$value": "#FFFFFF" };
+  tokens.colors.black = { "$value": "#000000" };
+  tokens.colors.white = { "$value": "#FFFFFF" };
+
+  // --- Custom Colors ---
+  customColors.forEach(cc => {
+    tokens.colors[sanitizeCamelCase(cc.name)] = { "$value": cc.value[mode] };
+  });
+
 
   // --- Dimensions ---
-  modeTokens.dimensions = { "$type": "dimension" };
   properties.spacing.forEach(item => {
-    modeTokens.dimensions[sanitizeCamelCase(item.name)] = { "$value": `${item.value}px` };
+    tokens.dimensions[sanitizeCamelCase(item.name)] = { "$value": `${item.value}px` };
   });
   properties.borderRadius.forEach(item => {
-    modeTokens.dimensions[sanitizeCamelCase(item.name)] = { "$value": `${item.value}px` };
+    tokens.dimensions[sanitizeCamelCase(item.name)] = { "$value": `${item.value}px` };
   });
   properties.borderWidth.forEach(item => {
-    modeTokens.dimensions[sanitizeCamelCase(item.name)] = { "$value": `${item.value}px` };
+    tokens.dimensions[sanitizeCamelCase(item.name)] = { "$value": `${item.value}px` };
   });
-  // Add a "max" if a "full" radius exists (common for pill shapes)
   if (properties.borderRadius.find(item => item.name === 'full')) {
-      modeTokens.dimensions.max = { "$value": "9999px" };
+      tokens.dimensions.max = { "$value": "9999px" };
   }
 
 
   // --- Text ---
-  modeTokens.text = {
-    fonts: { "$type": "fontFamily" },
-    weights: { "$type": "fontWeight" },
-    lineHeights: { "$type": "lineHeight" }, // Using "lineHeight" as type for clarity
-    typography: { "$type": "typography" },
-  };
-
   const uniqueFontFamilies: Record<string, string> = {};
   const uniqueFontWeights: Record<string, FontWeightValue> = {};
   const uniqueLineHeights: Record<string, number> = {};
@@ -546,13 +578,11 @@ function generateTokensForMode(theme: ThemeConfiguration, mode: 'light' | 'dark'
     if (!uniqueFontFamilies[fontFamilyKey]) {
       uniqueFontFamilies[fontFamilyKey] = webFont?.stack || style.fontFamily;
     }
-
     const fontWeightKey = mapFontWeightToFigmaString(style.fontWeight).toLowerCase().replace(/\s+/g, '');
     if (!uniqueFontWeights[fontWeightKey]) {
       uniqueFontWeights[fontWeightKey] = style.fontWeight;
     }
     if (style.lineHeight !== undefined) {
-        // Create a key for line height, e.g., lh1_5 for 1.5
         const lineHeightKey = `lh${style.lineHeight.toString().replace('.', '_')}`;
         if (!uniqueLineHeights[lineHeightKey]) {
             uniqueLineHeights[lineHeightKey] = style.lineHeight;
@@ -564,15 +594,15 @@ function generateTokensForMode(theme: ThemeConfiguration, mode: 'light' | 'dark'
   fonts.customTextStyles.forEach(custom => processTextStyle(custom.style));
 
   for (const key in uniqueFontFamilies) {
-    modeTokens.text.fonts[key] = { "$value": uniqueFontFamilies[key] };
+    tokens.text.fonts[key] = { "$value": uniqueFontFamilies[key] };
   }
   for (const key in uniqueFontWeights) {
-    modeTokens.text.weights[key] = { "$value": mapFontWeightToFigmaString(uniqueFontWeights[key]) };
+    tokens.text.weights[key] = { "$value": mapFontWeightToFigmaString(uniqueFontWeights[key]) };
   }
   for (const key in uniqueLineHeights) {
-    modeTokens.text.lineHeights[key] = { "$value": uniqueLineHeights[key] };
+    tokens.text.lineHeights[key] = { "$value": uniqueLineHeights[key] };
   }
-  
+
   const addTypographyStyle = (name: string, style: TextStyleProperties) => {
     const webFont = COMMON_WEB_FONTS.find(f => f.value === style.fontFamily);
     const fontFamilyKey = sanitizeCamelCase(webFont?.label || style.fontFamily);
@@ -580,18 +610,24 @@ function generateTokensForMode(theme: ThemeConfiguration, mode: 'light' | 'dark'
     const typographyValue: any = {
         "fontFamily": `{text.fonts.${fontFamilyKey}}`,
         "fontWeight": `{text.weights.${fontWeightKey}}`,
-        "fontSize": `${style.fontSize}px`
+        "fontSize": `${style.fontSize}px` // Direct value as per example
     };
     if (style.lineHeight !== undefined) {
         const lineHeightKey = `lh${style.lineHeight.toString().replace('.', '_')}`;
         typographyValue.lineHeight = `{text.lineHeights.${lineHeightKey}}`;
     }
-    modeTokens.text.typography[sanitizeCamelCase(name)] = { "$value": typographyValue };
+    tokens.text.typography[sanitizeCamelCase(name)] = { "$value": typographyValue };
 
-    // Export text color as a separate token
     if (style.color && style.color[mode]) {
         const colorTokenName = `text${sanitizeCamelCase(name).charAt(0).toUpperCase() + sanitizeCamelCase(name).slice(1)}`;
-        modeTokens.colors[colorTokenName] = { "$value": style.color[mode] };
+        tokens.colors[colorTokenName] = { "$value": style.color[mode] };
+    } else {
+        // Fallback to onSurface if per-style color is not defined
+        const onSurfaceToken = tokens.colors[sanitizeCamelCase('onSurface')];
+        if (onSurfaceToken) {
+            const colorTokenName = `text${sanitizeCamelCase(name).charAt(0).toUpperCase() + sanitizeCamelCase(name).slice(1)}`;
+            tokens.colors[colorTokenName] = { "$value": onSurfaceToken.$value };
+        }
     }
   };
 
@@ -601,13 +637,12 @@ function generateTokensForMode(theme: ThemeConfiguration, mode: 'light' | 'dark'
   fonts.customTextStyles.forEach(custom => addTypographyStyle(custom.name, custom.style));
 
 
-  // --- Borders (Simplified) ---
-  modeTokens.borders = { "$type": "border", styles: { "$type": "strokeStyle", solid: { "$value": "solid" } } };
-  const outlineColorRole = sanitizeCamelCase('outline'); // Assuming 'outline' is a defined color role
+  // --- Borders ---
+  const outlineColorRole = sanitizeCamelCase('outline');
   const defaultBorderWidth = properties.borderWidth.find(bw => bw.name === 'thin') || properties.borderWidth[0] || {name: 'default', value: 1};
   const defaultBorderWidthKey = sanitizeCamelCase(defaultBorderWidth.name);
-  if (modeTokens.colors[outlineColorRole] && modeTokens.dimensions[defaultBorderWidthKey]) {
-      modeTokens.borders.default = {
+  if (tokens.colors[outlineColorRole] && tokens.dimensions[defaultBorderWidthKey]) {
+      tokens.borders.default = {
           "$value": {
               "color": `{colors.${outlineColorRole}}`,
               "width": `{dimensions.${defaultBorderWidthKey}}`,
@@ -616,43 +651,57 @@ function generateTokensForMode(theme: ThemeConfiguration, mode: 'light' | 'dark'
       };
   }
 
-
   // --- Shadows (from Elevation) ---
-  modeTokens.shadows = { "$type": "shadow" };
   properties.elevation.forEach(item => {
     const parsed = parseBoxShadowString(item.value);
     if (parsed) {
-      // For simplicity, not referencing dimensions for offsetX, offsetY etc.
-      // Color referencing would be ideal but complex to map perfectly from CSS string to existing tokens.
-      modeTokens.shadows[sanitizeCamelCase(item.name)] = {
+      tokens.shadows[sanitizeCamelCase(item.name)] = {
         "$value": {
-          "color": parsed.color, // Direct color value from parsed shadow
+          "color": parsed.color,
           "offsetX": parsed.offsetX,
           "offsetY": parsed.offsetY,
           "blur": parsed.blur,
           "spread": parsed.spread,
-          // "inset": parsed.inset // Figma shadow type doesn't have inset directly in value object, it's a type of shadow.
         },
-        // "$extensions": { "com.figma": { "effectType": parsed.inset ? "INNER_SHADOW" : "DROP_SHADOW" } } // Example for plugin
       };
     }
   });
 
   // --- Opacity ---
-  modeTokens.opacity = { "$type": "opacity" }; // Or number, based on plugin expectations
   properties.opacity.forEach(item => {
-    modeTokens.opacity[sanitizeCamelCase(item.name)] = { "$value": item.value.toString() };
+    tokens.opacity[sanitizeCamelCase(item.name)] = { "$value": item.value.toString() }; // Figma expects string for opacity unless plugin maps it
   });
 
-  return modeTokens;
+  return tokens;
 }
 
 export function generateFigmaTokens(theme: ThemeConfiguration): string {
   const figmaOutput = {
+    global: { // A common top-level group for sets
+        base: generateTokensForMode(theme, 'light'), // Consider "base" as light for this structure
+    },
+    light: generateTokensForMode(theme, 'light'), // Explicit light theme set
+    dark: generateTokensForMode(theme, 'dark'),   // Explicit dark theme set
+  };
+
+  // To match the example structure more closely where some tokens are global and some are per-theme,
+  // we can create a "global" set for things that don't change by mode, and "theme-specific" sets.
+  // For this app, most things ARE mode-specific.
+  // The provided example uses a flat structure. Let's provide both light/dark as separate complete sets.
+
+  // Let's refine to have semantic token sets and a global set if needed by plugins.
+  // However, the example format is more like a single theme.
+  // So, to simplify and match the user's provided example structure (which doesn't show theme sets),
+  // AND still support our app's light/dark modes, we output them as separate top-level keys.
+
+  const output = {
     light: generateTokensForMode(theme, 'light'),
     dark: generateTokensForMode(theme, 'dark'),
   };
-  return JSON.stringify(figmaOutput, null, 2);
-}
 
-    
+  // If the user's example implies a *single* token set, we'd pick one mode,
+  // but Material Palette Forge is fundamentally dual-mode.
+  // So, outputting both `light` and `dark` sets is the most accurate representation of the app's data.
+
+  return JSON.stringify(output, null, 2);
+}
