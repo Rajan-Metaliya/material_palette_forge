@@ -1,25 +1,31 @@
 
-
 import type { ThemeConfiguration, MaterialColors, ThemeGradient, CustomStringPropertyItem, CustomNumericPropertyItem, TextStyleProperties, MaterialTextStyleKey, FontWeightValue, ColorModeValues } from '@/types/theme';
+import { COMMON_WEB_FONTS } from './consts';
 
 function toFlutterColor(hex: string): string {
   if (!hex || hex.length < 4) return `Color(0xFF000000)`; // Default to black if invalid
   return `Color(0xFF${hex.substring(1).toUpperCase()})`;
 }
 
-function sanitizeDartVariableName(name: string): string {
+function sanitizeCamelCase(name: string): string {
   if (!name) return 'unnamedProperty';
-  let sanitized = name.replace(/[^a-zA-Z0-9_]/g, '_');
-  if (sanitized.match(/^[^a-zA-Z_]/) || sanitized.match(/^[0-9]/)) {
-    sanitized = 'style_' + sanitized;
-  }
-  sanitized = sanitized.replace(/_([a-zA-Z])/g, (match, p1) => p1.toUpperCase());
-  if (sanitized.length > 0 && sanitized[0] === sanitized[0].toUpperCase()) {
-    sanitized = sanitized[0].toLowerCase() + sanitized.substring(1);
+  let sanitized = name.replace(/[^a-zA-Z0-9_-\s]/g, ''); // Allow alphanumeric, underscore, hyphen, space
+  sanitized = sanitized
+    .replace(/[\s_-]+(.)?/g, (_, c) => (c ? c.toUpperCase() : '')) // Convert to camelCase
+    .replace(/^(.)/, (c) => c.toLowerCase()); // Ensure first char is lowercase
+  
+  if (sanitized.match(/^[^a-zA-Z]/) && !sanitized.match(/^_[a-zA-Z]/)) { // if starts with non-alpha (and not _alpha)
+    sanitized = 'prop' + sanitized.replace(/^[^a-zA-Z0-9]/, ''); // Prepend 'prop' and remove leading non-alphanum if any
+     if (sanitized.length > 4 && sanitized[4] === sanitized[4].toUpperCase()) {
+        // propName -> propName
+     } else if (sanitized.length > 4) {
+        sanitized = sanitized.substring(0,4) + sanitized.charAt(4).toUpperCase() + sanitized.substring(5);
+     }
   }
   if (sanitized.length === 0) return 'unnamedProperty';
   return sanitized;
 }
+
 
 function mapFontWeightToFlutter(weight: FontWeightValue): string {
   if (typeof weight === 'string') {
@@ -59,18 +65,18 @@ function generatePropertyExtensionClass(
   valueTypeInDart: 'double' | 'String',
   valueParserForDartInstance: (value: string | number) => string
 ): string {
-  const props = properties.map(p => `  final ${valueTypeInDart} ${sanitizeDartVariableName(p.name)};`).join('\n');
-  const constructorArgs = properties.map(p => `    required this.${sanitizeDartVariableName(p.name)},`).join('\n');
-  const copyWithArgs = properties.map(p => `${valueTypeInDart}? ${sanitizeDartVariableName(p.name)},`).join('');
-  const copyWithReturn = properties.map(p => `      ${sanitizeDartVariableName(p.name)}: ${sanitizeDartVariableName(p.name)} ?? this.${sanitizeDartVariableName(p.name)},`).join('\n');
+  const props = properties.map(p => `  final ${valueTypeInDart} ${sanitizeCamelCase(p.name)};`).join('\n');
+  const constructorArgs = properties.map(p => `    required this.${sanitizeCamelCase(p.name)},`).join('\n');
+  const copyWithArgs = properties.map(p => `${valueTypeInDart}? ${sanitizeCamelCase(p.name)},`).join('');
+  const copyWithReturn = properties.map(p => `      ${sanitizeCamelCase(p.name)}: ${sanitizeCamelCase(p.name)} ?? this.${sanitizeCamelCase(p.name)},`).join('\n');
   const lerpLogic = properties.map(p => {
-    const varName = sanitizeDartVariableName(p.name);
+    const varName = sanitizeCamelCase(p.name);
     if (valueTypeInDart === 'double') {
       return `      ${varName}: lerpDouble(this.${varName}, other.${varName}, t)!,`;
     }
     return `      ${varName}: t < 0.5 ? this.${varName} : other.${varName},`;
   }).join('\n');
-  const instanceArgs = properties.map(p => `      ${sanitizeDartVariableName(p.name)}: ${valueParserForDartInstance(p.value)},`).join('\n');
+  const instanceArgs = properties.map(p => `      ${sanitizeCamelCase(p.name)}: ${valueParserForDartInstance(p.value)},`).join('\n');
 
   return `
 @immutable
@@ -101,7 +107,7 @@ ${lerpLogic}
   }
 }
 
-const _${className.toLowerCase().replace(/\s+/g, '')} = ${className}(
+final _${className.toLowerCase().replace(/\s+/g, '')} = ${className}(
 ${instanceArgs}
 );
 `;
@@ -191,14 +197,14 @@ ${gradientDataInstances}
   let customTextStylesExtension = '';
   if (fonts.customTextStyles.length > 0) {
     const generateCustomStyleInstanceArgs = (mode: 'light' | 'dark'): string => {
-      return fonts.customTextStyles.map(cs => `      ${sanitizeDartVariableName(cs.name)}: ${generateTextStyleDart(cs.style, mode)},`).join('\n');
+      return fonts.customTextStyles.map(cs => `      ${sanitizeCamelCase(cs.name)}: ${generateTextStyleDart(cs.style, mode)},`).join('\n');
     };
 
-    const customStyleProps = fonts.customTextStyles.map(cs => `  final TextStyle ${sanitizeDartVariableName(cs.name)};`).join('\n');
-    const customStyleConstructorArgs = fonts.customTextStyles.map(cs => `    required this.${sanitizeDartVariableName(cs.name)},`).join('\n');
-    const customStyleCopyWithArgs = fonts.customTextStyles.map(cs => `TextStyle? ${sanitizeDartVariableName(cs.name)},`).join('');
-    const customStyleCopyWithReturn = fonts.customTextStyles.map(cs => `      ${sanitizeDartVariableName(cs.name)}: ${sanitizeDartVariableName(cs.name)} ?? this.${sanitizeDartVariableName(cs.name)},`).join('\n');
-    const customStyleLerpLogic = fonts.customTextStyles.map(cs => `      ${sanitizeDartVariableName(cs.name)}: TextStyle.lerp(this.${sanitizeDartVariableName(cs.name)}, other.${sanitizeDartVariableName(cs.name)}, t)!,`).join('\n');
+    const customStyleProps = fonts.customTextStyles.map(cs => `  final TextStyle ${sanitizeCamelCase(cs.name)};`).join('\n');
+    const customStyleConstructorArgs = fonts.customTextStyles.map(cs => `    required this.${sanitizeCamelCase(cs.name)},`).join('\n');
+    const customStyleCopyWithArgs = fonts.customTextStyles.map(cs => `TextStyle? ${sanitizeCamelCase(cs.name)},`).join('');
+    const customStyleCopyWithReturn = fonts.customTextStyles.map(cs => `      ${sanitizeCamelCase(cs.name)}: ${sanitizeCamelCase(cs.name)} ?? this.${sanitizeCamelCase(cs.name)},`).join('\n');
+    const customStyleLerpLogic = fonts.customTextStyles.map(cs => `      ${sanitizeCamelCase(cs.name)}: TextStyle.lerp(this.${sanitizeCamelCase(cs.name)}, other.${sanitizeCamelCase(cs.name)}, t)!,`).join('\n');
     
     customTextStylesExtension = `
 @immutable
@@ -226,10 +232,10 @@ ${customStyleLerpLogic}
 }
 
 // Instances for light and dark modes
-const _apptextstylesLight = AppTextStyles(
+final _apptextstylesLight = AppTextStyles(
 ${generateCustomStyleInstanceArgs('light')}
 );
-const _apptextstylesDark = AppTextStyles(
+final _apptextstylesDark = AppTextStyles(
 ${generateCustomStyleInstanceArgs('dark')}
 );`;
   }
@@ -258,11 +264,13 @@ import 'dart:math' show pi;
 
 // Generated by Material Palette Forge
 
+// Helper function (if still needed for elevation or manual parsing elsewhere)
 double parseUnitValue(String value) {
   if (value.isEmpty) return 0.0;
-  final cleanValue = value.replaceAll(RegExp(r'(deg|px|em|rem|%|pt|pc|in|cm|mm|ex|ch|vw|vh|vmin|vmax)'), '').trim();
+  // Attempt to remove common units and parse. This is a simplified approach.
+  final cleanValue = value.replaceAll(RegExp(r'(px|em|rem|%|pt|pc|in|cm|mm|ex|ch|vw|vh|vmin|vmax|deg)'), '').trim();
   final parsed = double.tryParse(cleanValue);
-  return parsed ?? 0.0;
+  return parsed ?? 0.0; // Return 0.0 if parsing fails
 }
 
 // --- Custom Theme Extensions ---
@@ -327,7 +335,7 @@ class AppTheme {
       bodyColor: colorScheme.onSurface,
       displayColor: colorScheme.onSurface,
     );
-    final defaultCardBorderRadius = _appborderradius.md;
+    final defaultCardBorderRadius = _appborderradius.md; // Example access
 
     return ThemeData(
       useMaterial3: true,
@@ -336,11 +344,11 @@ class AppTheme {
       extensions: extensions,
       cardTheme: CardTheme(
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(defaultCardBorderRadius)),
-        color: colorScheme.surfaceContainerHighest,
+        color: colorScheme.surfaceContainerHighest, // M3 recommendation
         surfaceTintColor: colorScheme.surfaceTint,
-        elevation: _appelevation.level1.isNotEmpty ? parseUnitValue(_appelevation.level1.split('px')[0]) : 1.0,
+        elevation: _appelevation.level1.isNotEmpty ? parseUnitValue(_appelevation.level1.split('px')[0]) : 1.0, // Basic parsing for elevation
       ),
-      buttonTheme: ButtonThemeData(
+      buttonTheme: ButtonThemeData( // Legacy, but can set some defaults
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(_appborderradius.full)),
         padding: EdgeInsets.symmetric(horizontal: _appspacing.lg, vertical: _appspacing.sm),
       ),
@@ -360,8 +368,9 @@ class AppTheme {
         border: OutlineInputBorder(borderRadius: BorderRadius.circular(_appborderradius.sm), borderSide: BorderSide(color: colorScheme.outline)),
         enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(_appborderradius.sm), borderSide: BorderSide(color: colorScheme.outline)),
         focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(_appborderradius.sm), borderSide: BorderSide(color: colorScheme.primary, width: _appborderwidth.medium)),
-        filled: true, fillColor: colorScheme.surfaceContainerHighest,
+        filled: true, fillColor: colorScheme.surfaceContainerHighest, // M3 uses surfaceContainerHighest or similar
       ),
+      // Add other component themes as needed
     );
   }
 
@@ -399,102 +408,251 @@ export function generateJson(theme: ThemeConfiguration): string {
   return JSON.stringify(themeCopy, null, 2);
 }
 
-export function generateFigmaTokens(theme: ThemeConfiguration): string {
-  const themeCopy = JSON.parse(JSON.stringify(theme));
-  const figmaTokens: any = {
-    global: { /* This can hold common tokens if any */ },
-    light: { color: {}, typography: {}, spacing: {}, borderRadius: {}, borderWidth: {}, opacity: {}, boxShadow: {}, gradient: {} },
-    dark: { color: {}, typography: {}, spacing: {}, borderRadius: {}, borderWidth: {}, opacity: {}, boxShadow: {}, gradient: {} },
+// Helper to parse a CSS box-shadow string (simplified for single shadow)
+interface ParsedShadow {
+  offsetX: string;
+  offsetY: string;
+  blur: string;
+  spread: string;
+  color: string;
+  inset: boolean;
+}
+
+function parseBoxShadowString(shadowString: string): ParsedShadow | null {
+  if (!shadowString || shadowString.toLowerCase() === 'none') return null;
+
+  let input = shadowString.trim();
+  let inset = false;
+
+  if (input.startsWith('inset')) {
+    inset = true;
+    input = input.substring(5).trim();
+  }
+
+  // Regex to find color (hex, rgb, rgba, hsl, hsla, keywords) at the end or start
+  // This is very hard to make perfect. For now, we assume color is at the end if not specified.
+  // A common pattern is lengths followed by color.
+  const colorMatch = input.match(/(#[0-9a-fA-F]{3,8}|rgba?\([\d.,\s%/]+\)|hsla?\([\d.,\s%/]+\)|\b[a-zA-Z]+\b)$/i);
+  let color = 'rgba(0,0,0,0.1)'; // Default color
+  let partsWithoutColor = input;
+
+  if (colorMatch) {
+    color = colorMatch[0];
+    partsWithoutColor = input.substring(0, input.lastIndexOf(color)).trim();
+  }
+  
+  const lengthParts = partsWithoutColor.split(/\s+/).filter(Boolean);
+
+  let offsetX = '0px', offsetY = '0px', blur = '0px', spread = '0px';
+
+  if (lengthParts.length >= 2) { // offsetX, offsetY
+    offsetX = lengthParts[0];
+    offsetY = lengthParts[1];
+  }
+  if (lengthParts.length >= 3) { // blur
+    blur = lengthParts[2];
+  }
+  if (lengthParts.length >= 4) { // spread
+    spread = lengthParts[3];
+  }
+  
+  // Basic validation that they look like length units (very simplified)
+  const isLength = (s: string) => s && /^-?\d*(\.\d+)?(px|em|rem|%|pt|pc|in|cm|mm|ex|ch|vw|vh|vmin|vmax)?$/i.test(s);
+
+  if (!isLength(offsetX) || !isLength(offsetY)) {
+    // console.warn("Could not reliably parse shadow string lengths:", shadowString, "Got:", {offsetX, offsetY, blur, spread});
+    // Fallback for robustnes, though may not be accurate.
+    return { offsetX: '0px', offsetY: '1px', blur: '3px', spread: '0px', color: 'rgba(0,0,0,0.1)', inset };
+  }
+  if (blur && !isLength(blur)) blur = '0px'; // if blur exists but is not a length, default it
+  if (spread && !isLength(spread)) spread = '0px'; // if spread exists but is not a length, default it
+
+
+  return { offsetX, offsetY, blur, spread, color, inset };
+}
+
+
+function mapFontWeightToFigmaString(weight: FontWeightValue): string {
+    if (typeof weight === 'string') {
+        if (weight === 'normal') return 'Regular';
+        if (weight === 'bold') return 'Bold';
+        const numWeight = parseInt(weight, 10);
+        if (!isNaN(numWeight)) weight = numWeight as any;
+        else return 'Regular';
+    }
+    switch(weight) {
+        case 100: return 'Thin';
+        case 200: return 'ExtraLight';
+        case 300: return 'Light';
+        case 400: return 'Regular';
+        case 500: return 'Medium';
+        case 600: return 'SemiBold';
+        case 700: return 'Bold';
+        case 800: return 'ExtraBold';
+        case 900: return 'Black';
+        default: return 'Regular';
+    }
+}
+
+function generateTokensForMode(theme: ThemeConfiguration, mode: 'light' | 'dark'): any {
+  const { colors, fonts, properties } = theme;
+  const modeTokens: any = {};
+
+  // --- Colors ---
+  modeTokens.colors = { "$type": "color" };
+  for (const key in colors) {
+    if (key === 'seedColor') continue;
+    const roleKey = key as keyof MaterialColors;
+    const colorSpec = colors[roleKey] as ColorModeValues | undefined;
+    if (colorSpec && typeof colorSpec === 'object' && colorSpec[mode]) {
+      modeTokens.colors[sanitizeCamelCase(roleKey)] = { "$value": colorSpec[mode] };
+    }
+  }
+  modeTokens.colors.black = { "$value": "#000000" };
+  modeTokens.colors.white = { "$value": "#FFFFFF" };
+
+  // --- Dimensions ---
+  modeTokens.dimensions = { "$type": "dimension" };
+  properties.spacing.forEach(item => {
+    modeTokens.dimensions[sanitizeCamelCase(item.name)] = { "$value": `${item.value}px` };
+  });
+  properties.borderRadius.forEach(item => {
+    modeTokens.dimensions[sanitizeCamelCase(item.name)] = { "$value": `${item.value}px` };
+  });
+  properties.borderWidth.forEach(item => {
+    modeTokens.dimensions[sanitizeCamelCase(item.name)] = { "$value": `${item.value}px` };
+  });
+  // Add a "max" if a "full" radius exists (common for pill shapes)
+  if (properties.borderRadius.find(item => item.name === 'full')) {
+      modeTokens.dimensions.max = { "$value": "9999px" };
+  }
+
+
+  // --- Text ---
+  modeTokens.text = {
+    fonts: { "$type": "fontFamily" },
+    weights: { "$type": "fontWeight" },
+    lineHeights: { "$type": "lineHeight" }, // Using "lineHeight" as type for clarity
+    typography: { "$type": "typography" },
   };
 
-  (['light', 'dark'] as const).forEach(mode => {
-    const modeColors = figmaTokens[mode].color;
-    for (const key in themeCopy.colors) {
-      if (key === 'seedColor') continue;
-      const roleKey = key as keyof MaterialColors;
-      const colorSpec = themeCopy.colors[roleKey] as ColorModeValues | undefined;
-      if (colorSpec && typeof colorSpec === 'object' && colorSpec[mode]) {
-        modeColors[sanitizeDartVariableName(roleKey)] = { value: colorSpec[mode], type: "color" };
-      }
+  const uniqueFontFamilies: Record<string, string> = {};
+  const uniqueFontWeights: Record<string, FontWeightValue> = {};
+  const uniqueLineHeights: Record<string, number> = {};
+
+  const processTextStyle = (style: TextStyleProperties) => {
+    const webFont = COMMON_WEB_FONTS.find(f => f.value === style.fontFamily);
+    const fontFamilyKey = sanitizeCamelCase(webFont?.label || style.fontFamily);
+    if (!uniqueFontFamilies[fontFamilyKey]) {
+      uniqueFontFamilies[fontFamilyKey] = webFont?.stack || style.fontFamily;
     }
 
-    const modeTypography = figmaTokens[mode].typography;
-    for (const key in themeCopy.fonts.materialTextStyles) {
-      const styleKey = key as MaterialTextStyleKey;
-      const styleProps = themeCopy.fonts.materialTextStyles[styleKey];
-      const figmaTextStyle: any = {
-        fontFamily: styleProps.fontFamily, 
-        fontSize: `${styleProps.fontSize}px`, // Figma needs unit
-        fontWeight: styleProps.fontWeight.toString(), 
-        letterSpacing: styleProps.letterSpacing !== 0 ? `${styleProps.letterSpacing}px` : '0', // Figma needs unit or '0' for no spacing
-        lineHeight: styleProps.lineHeight ? `${styleProps.lineHeight * 100}%` : 'normal',
-      };
-      if (styleProps.color && styleProps.color[mode]) {
-        // Figma expects color directly within the typography object for some plugins,
-        // or you can reference another color token. Here, we embed it.
-         figmaTextStyle.fills = [{type: 'SOLID', color: styleProps.color[mode]}]; // Example for plugin like Tokens Studio
-         // Or simply: figmaTextStyle.color = styleProps.color[mode];
-      }
-      modeTypography[sanitizeDartVariableName(styleKey)] = { value: figmaTextStyle, type: "typography" };
+    const fontWeightKey = mapFontWeightToFigmaString(style.fontWeight).toLowerCase().replace(/\s+/g, '');
+    if (!uniqueFontWeights[fontWeightKey]) {
+      uniqueFontWeights[fontWeightKey] = style.fontWeight;
     }
-    themeCopy.fonts.customTextStyles.forEach(customStyle => {
-      const figmaTextStyle: any = {
-        fontFamily: customStyle.style.fontFamily, 
-        fontSize: `${customStyle.style.fontSize}px`,
-        fontWeight: customStyle.style.fontWeight.toString(), 
-        letterSpacing: customStyle.style.letterSpacing !== 0 ? `${customStyle.style.letterSpacing}px` : '0',
-        lineHeight: customStyle.style.lineHeight ? `${customStyle.style.lineHeight * 100}%` : 'normal',
+    if (style.lineHeight !== undefined) {
+        // Create a key for line height, e.g., lh1_5 for 1.5
+        const lineHeightKey = `lh${style.lineHeight.toString().replace('.', '_')}`;
+        if (!uniqueLineHeights[lineHeightKey]) {
+            uniqueLineHeights[lineHeightKey] = style.lineHeight;
+        }
+    }
+  };
+
+  (Object.values(fonts.materialTextStyles) as TextStyleProperties[]).forEach(processTextStyle);
+  fonts.customTextStyles.forEach(custom => processTextStyle(custom.style));
+
+  for (const key in uniqueFontFamilies) {
+    modeTokens.text.fonts[key] = { "$value": uniqueFontFamilies[key] };
+  }
+  for (const key in uniqueFontWeights) {
+    modeTokens.text.weights[key] = { "$value": mapFontWeightToFigmaString(uniqueFontWeights[key]) };
+  }
+  for (const key in uniqueLineHeights) {
+    modeTokens.text.lineHeights[key] = { "$value": uniqueLineHeights[key] };
+  }
+  
+  const addTypographyStyle = (name: string, style: TextStyleProperties) => {
+    const webFont = COMMON_WEB_FONTS.find(f => f.value === style.fontFamily);
+    const fontFamilyKey = sanitizeCamelCase(webFont?.label || style.fontFamily);
+    const fontWeightKey = mapFontWeightToFigmaString(style.fontWeight).toLowerCase().replace(/\s+/g, '');
+    const typographyValue: any = {
+        "fontFamily": `{text.fonts.${fontFamilyKey}}`,
+        "fontWeight": `{text.weights.${fontWeightKey}}`,
+        "fontSize": `${style.fontSize}px`
+    };
+    if (style.lineHeight !== undefined) {
+        const lineHeightKey = `lh${style.lineHeight.toString().replace('.', '_')}`;
+        typographyValue.lineHeight = `{text.lineHeights.${lineHeightKey}}`;
+    }
+    modeTokens.text.typography[sanitizeCamelCase(name)] = { "$value": typographyValue };
+
+    // Export text color as a separate token
+    if (style.color && style.color[mode]) {
+        const colorTokenName = `text${sanitizeCamelCase(name).charAt(0).toUpperCase() + sanitizeCamelCase(name).slice(1)}`;
+        modeTokens.colors[colorTokenName] = { "$value": style.color[mode] };
+    }
+  };
+
+  for (const key in fonts.materialTextStyles) {
+    addTypographyStyle(key, fonts.materialTextStyles[key as MaterialTextStyleKey]);
+  }
+  fonts.customTextStyles.forEach(custom => addTypographyStyle(custom.name, custom.style));
+
+
+  // --- Borders (Simplified) ---
+  modeTokens.borders = { "$type": "border", styles: { "$type": "strokeStyle", solid: { "$value": "solid" } } };
+  const outlineColorRole = sanitizeCamelCase('outline'); // Assuming 'outline' is a defined color role
+  const defaultBorderWidth = properties.borderWidth.find(bw => bw.name === 'thin') || properties.borderWidth[0] || {name: 'default', value: 1};
+  const defaultBorderWidthKey = sanitizeCamelCase(defaultBorderWidth.name);
+  if (modeTokens.colors[outlineColorRole] && modeTokens.dimensions[defaultBorderWidthKey]) {
+      modeTokens.borders.default = {
+          "$value": {
+              "color": `{colors.${outlineColorRole}}`,
+              "width": `{dimensions.${defaultBorderWidthKey}}`,
+              "style": "{borders.styles.solid}"
+          }
       };
-       if (customStyle.style.color && customStyle.style.color[mode]) {
-         figmaTextStyle.fills = [{type: 'SOLID', color: customStyle.style.color[mode]}];
-         // Or: figmaTextStyle.color = customStyle.style.color[mode];
-      }
-      modeTypography[sanitizeDartVariableName(customStyle.name)] = { value: figmaTextStyle, type: "typography" };
-    });
-    
-    // Properties are typically mode-agnostic in definition.
-    // We define them once, e.g., under 'light' (or 'global' if preferred).
-    if (mode === 'light') { 
-        (themeCopy.properties.spacing as CustomNumericPropertyItem[]).forEach(item => {
-            figmaTokens.light.spacing[sanitizeDartVariableName(item.name)] = { value: `${item.value}px`, type: "spacing" };
-        });
-        (themeCopy.properties.borderRadius as CustomNumericPropertyItem[]).forEach(item => {
-            figmaTokens.light.borderRadius[sanitizeDartVariableName(item.name)] = { value: `${item.value}px`, type: "borderRadius" };
-        });
-        (themeCopy.properties.borderWidth as CustomNumericPropertyItem[]).forEach(item => {
-            figmaTokens.light.borderWidth[sanitizeDartVariableName(item.name)] = { value: `${item.value}px`, type: "borderWidth" };
-        });
-        (themeCopy.properties.opacity as CustomNumericPropertyItem[]).forEach(item => {
-            figmaTokens.light.opacity[sanitizeDartVariableName(item.name)] = { value: item.value.toString(), type: "opacity" };
-        });
-        (themeCopy.properties.elevation as CustomStringPropertyItem[]).forEach(item => {
-            // Figma boxShadow needs parsing if it's a multi-shadow string
-            const shadows = item.value.split(',').map(s => s.trim()).filter(s => s && s !== 'none');
-            const figmaShadows = shadows.map(shadowStr => {
-                const parts = shadowStr.match(/([^\s]+)\s+([^\s]+)\s+([^\s]+)\s+(([^\s]+)\s+)?(rgba?\([^\)]+\)|#[0-9a-fA-F]+)/);
-                if (parts) {
-                    return {
-                        x: parts[1], y: parts[2], blur: parts[3], spread: parts[5] || '0px', color: parts[6], type: 'dropShadow'
-                    };
-                }
-                return { x: '0', y: '0', blur: '0', spread: '0', color: '#00000000', type: 'dropShadow'}; // Fallback for "none" or parse error
-            });
-            figmaTokens.light.boxShadow[sanitizeDartVariableName(item.name)] = { 
-                value: figmaShadows.length === 1 ? figmaShadows[0] : figmaShadows, // Single shadow or array
-                type: "boxShadow" 
-            };
-        });
-        themeCopy.properties.gradients.forEach((gradient: ThemeGradient) => {
-            const colorsString = gradient.colors.join(', '); 
-            let figmaGradientValue = '';
-            if (gradient.type === 'linear') figmaGradientValue = `linear-gradient(${gradient.direction || 'to right'}, ${colorsString})`;
-            else if (gradient.type === 'radial') figmaGradientValue = `radial-gradient(${gradient.shape || 'circle'} at ${gradient.extent || 'center'}, ${colorsString})`;
-            const tokenName = sanitizeDartVariableName(gradient.name) || `gradient_${Object.keys(figmaTokens.light.gradient).length + 1}`;
-            figmaTokens.light.gradient[tokenName] = { value: figmaGradientValue, type: "other" }; // Figma might need specific gradient object structure
-      });
+  }
+
+
+  // --- Shadows (from Elevation) ---
+  modeTokens.shadows = { "$type": "shadow" };
+  properties.elevation.forEach(item => {
+    const parsed = parseBoxShadowString(item.value);
+    if (parsed) {
+      // For simplicity, not referencing dimensions for offsetX, offsetY etc.
+      // Color referencing would be ideal but complex to map perfectly from CSS string to existing tokens.
+      modeTokens.shadows[sanitizeCamelCase(item.name)] = {
+        "$value": {
+          "color": parsed.color, // Direct color value from parsed shadow
+          "offsetX": parsed.offsetX,
+          "offsetY": parsed.offsetY,
+          "blur": parsed.blur,
+          "spread": parsed.spread,
+          // "inset": parsed.inset // Figma shadow type doesn't have inset directly in value object, it's a type of shadow.
+        },
+        // "$extensions": { "com.figma": { "effectType": parsed.inset ? "INNER_SHADOW" : "DROP_SHADOW" } } // Example for plugin
+      };
     }
   });
 
+  // --- Opacity ---
+  modeTokens.opacity = { "$type": "opacity" }; // Or number, based on plugin expectations
+  properties.opacity.forEach(item => {
+    modeTokens.opacity[sanitizeCamelCase(item.name)] = { "$value": item.value.toString() };
+  });
 
-  return JSON.stringify(figmaTokens, null, 2);
+  return modeTokens;
 }
+
+export function generateFigmaTokens(theme: ThemeConfiguration): string {
+  const figmaOutput = {
+    light: generateTokensForMode(theme, 'light'),
+    dark: generateTokensForMode(theme, 'dark'),
+  };
+  return JSON.stringify(figmaOutput, null, 2);
+}
+
+    
