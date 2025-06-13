@@ -3,6 +3,7 @@ import type { Metadata } from 'next';
 import './globals.css';
 import { Toaster } from "@/components/ui/toaster";
 import { COMMON_WEB_FONTS } from '@/lib/consts'; // Import COMMON_WEB_FONTS
+import { ThemeProvider } from '@/context/ThemeContext'; // Import ThemeProvider
 
 export const metadata: Metadata = {
   title: 'Material Palette Forge',
@@ -22,8 +23,6 @@ const generateFontLinks = () => {
     }
   });
 
-  // Construct Google Fonts API URL with weights. Adjust weights as needed.
-  // For simplicity, including common weights. This could be dynamic based on ThemeConfig in future.
   const weights = ':wght@300;400;500;600;700;800;900';
   const fontFamiliesString = Array.from(uniqueFontFamilies).map(family => `family=${family}${weights}`).join('&');
   
@@ -46,15 +45,13 @@ export default function RootLayout({
       <head>
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
-        {/* Old static links - to be replaced or augmented by dynamic one */}
-        {/* <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" /> */}
-        {/* <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet" /> */}
         {googleFontsUrl && <link href={googleFontsUrl} rel="stylesheet" />}
       </head>
-      {/* Default font applied here, but individual components/text styles will override */}
       <body className="font-sans antialiased min-h-screen flex flex-col">
-        {children}
-        <Toaster />
+        <ThemeProvider> {/* Wrap children with ThemeProvider */}
+          {children}
+          <Toaster />
+        </ThemeProvider>
       </body>
     </html>
   );
