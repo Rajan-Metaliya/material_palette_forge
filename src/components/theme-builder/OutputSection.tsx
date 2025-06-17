@@ -54,7 +54,7 @@ const OutputSection: React.FC = () => {
   };
 
   const getIcon = (format: OutputFormat) => {
-    const iconProps = { className: "mr-2 h-5 w-5 text-accent" };
+    const iconProps = { className: "mr-1 sm:mr-2 h-4 w-4 sm:h-5 sm:w-5 text-accent" }; // Matched icon styling from main page
     switch (format) {
       case 'flutter':
         return <Smartphone {...iconProps} />;
@@ -74,14 +74,23 @@ const OutputSection: React.FC = () => {
       </CardHeader>
       <CardContent>
         <Tabs value={activeFormat} onValueChange={(value) => setActiveFormat(value as OutputFormat)} className="w-full">
-          <TabsList className="grid w-full grid-cols-3 mb-4">
-            <TabsTrigger value="flutter" className="flex items-center justify-center text-xs sm:text-sm">
+          <TabsList className="grid w-full grid-cols-3 bg-muted/60 p-1 rounded-lg shadow-md mb-4">
+            <TabsTrigger 
+              value="flutter" 
+              className="text-xs sm:text-sm data-[state=active]:bg-card data-[state=active]:text-card-foreground data-[state=active]:shadow-md data-[state=active]:border data-[state=active]:border-border rounded-md focus-visible:ring-1 focus-visible:ring-ring focus-visible:ring-offset-1 transition-colors data-[state=inactive]:hover:bg-muted"
+            >
               {getIcon('flutter')} Flutter
             </TabsTrigger>
-            <TabsTrigger value="json" className="flex items-center justify-center text-xs sm:text-sm">
+            <TabsTrigger 
+              value="json" 
+              className="text-xs sm:text-sm data-[state=active]:bg-card data-[state=active]:text-card-foreground data-[state=active]:shadow-md data-[state=active]:border data-[state=active]:border-border rounded-md focus-visible:ring-1 focus-visible:ring-ring focus-visible:ring-offset-1 transition-colors data-[state=inactive]:hover:bg-muted"
+            >
               {getIcon('json')} JSON
             </TabsTrigger>
-            <TabsTrigger value="figma" className="flex items-center justify-center text-xs sm:text-sm">
+            <TabsTrigger 
+              value="figma" 
+              className="text-xs sm:text-sm data-[state=active]:bg-card data-[state=active]:text-card-foreground data-[state=active]:shadow-md data-[state=active]:border data-[state=active]:border-border rounded-md focus-visible:ring-1 focus-visible:ring-ring focus-visible:ring-offset-1 transition-colors data-[state=inactive]:hover:bg-muted"
+            >
               {getIcon('figma')} Figma Tokens
             </TabsTrigger>
           </TabsList>
