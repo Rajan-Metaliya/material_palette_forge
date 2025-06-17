@@ -22,11 +22,11 @@ const MainEditorContent = () => {
       <div className="flex justify-between items-center mb-6">
         <h2 className="text-3xl font-headline font-semibold">Theme Customizer</h2>
         <div className="flex items-center space-x-2">
-          <Button onClick={resetTheme} variant="outline">
+          <Button onClick={resetTheme} variant="outline" className="shadow-md">
             <Settings2 className="mr-2 h-4 w-4 text-accent" /> Reset to Defaults
           </Button>
           <Link href="/output" passHref>
-            <Button>
+            <Button className="shadow-md">
               <FileCode className="mr-2 h-4 w-4" /> View Generated Code
             </Button>
           </Link>
