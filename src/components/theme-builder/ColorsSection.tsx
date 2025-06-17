@@ -15,8 +15,6 @@ import { Gem, Palette, PlusCircle, Trash2, ArrowRight } from 'lucide-react'; // 
 import { useToast } from "@/hooks/use-toast";
 
 
-type MaterialColorRole = keyof Omit<MaterialColors, 'seedColor'>;
-
 interface ColorsSectionProps {
   setActiveTab: (tab: string) => void;
 }
@@ -218,7 +216,7 @@ const ColorsSection: React.FC<ColorsSectionProps> = ({ setActiveTab }) => {
       </Accordion>
 
       <div className="mt-8 flex justify-end">
-        <Button onClick={() => setActiveTab("fonts")}>
+        <Button onClick={() => setActiveTab("fonts")} className="shadow-md">
           Next: Fonts <ArrowRight className="ml-2 h-4 w-4" />
         </Button>
       </div>

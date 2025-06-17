@@ -291,7 +291,7 @@ const FontsSection: React.FC<FontsSectionProps> = ({ setActiveTab }) => {
         </AccordionItem>
       </Accordion>
       <div className="mt-8 flex justify-end">
-        <Button onClick={() => setActiveTab("properties")}>
+        <Button onClick={() => setActiveTab("properties")} className="shadow-md">
           Next: Properties <ArrowRight className="ml-2 h-4 w-4" />
         </Button>
       </div>
