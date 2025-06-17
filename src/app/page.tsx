@@ -36,22 +36,22 @@ const MainEditorContent = () => {
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 items-start">
         <div className="lg:col-span-2 space-y-8">
           <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-            <TabsList className="grid w-full grid-cols-3 bg-muted/60 p-1 rounded-lg">
+            <TabsList className="grid w-full grid-cols-3 bg-muted/60 p-1 rounded-lg shadow-md">
               <TabsTrigger 
                 value="colors" 
-                className="text-xs sm:text-sm data-[state=active]:bg-card data-[state=active]:text-card-foreground data-[state=active]:shadow-md rounded-md focus-visible:ring-1 focus-visible:ring-ring focus-visible:ring-offset-1 transition-colors data-[state=inactive]:hover:bg-muted"
+                className="text-xs sm:text-sm data-[state=active]:bg-card data-[state=active]:text-card-foreground data-[state=active]:shadow-md data-[state=active]:border data-[state=active]:border-border rounded-md focus-visible:ring-1 focus-visible:ring-ring focus-visible:ring-offset-1 transition-colors data-[state=inactive]:hover:bg-muted"
               >
                 <Palette className="mr-1 sm:mr-2 h-4 w-4 sm:h-5 sm:w-5 text-accent" /> Colors
               </TabsTrigger>
               <TabsTrigger 
                 value="fonts" 
-                className="text-xs sm:text-sm data-[state=active]:bg-card data-[state=active]:text-card-foreground data-[state=active]:shadow-md rounded-md focus-visible:ring-1 focus-visible:ring-ring focus-visible:ring-offset-1 transition-colors data-[state=inactive]:hover:bg-muted"
+                className="text-xs sm:text-sm data-[state=active]:bg-card data-[state=active]:text-card-foreground data-[state=active]:shadow-md data-[state=active]:border data-[state=active]:border-border rounded-md focus-visible:ring-1 focus-visible:ring-ring focus-visible:ring-offset-1 transition-colors data-[state=inactive]:hover:bg-muted"
               >
                 <Type className="mr-1 sm:mr-2 h-4 w-4 sm:h-5 sm:w-5 text-accent" /> Fonts
               </TabsTrigger>
               <TabsTrigger 
                 value="properties" 
-                className="text-xs sm:text-sm data-[state=active]:bg-card data-[state=active]:text-card-foreground data-[state=active]:shadow-md rounded-md focus-visible:ring-1 focus-visible:ring-ring focus-visible:ring-offset-1 transition-colors data-[state=inactive]:hover:bg-muted"
+                className="text-xs sm:text-sm data-[state=active]:bg-card data-[state=active]:text-card-foreground data-[state=active]:shadow-md data-[state=active]:border data-[state=active]:border-border rounded-md focus-visible:ring-1 focus-visible:ring-ring focus-visible:ring-offset-1 transition-colors data-[state=inactive]:hover:bg-muted"
               >
                 <SlidersHorizontal className="mr-1 sm:mr-2 h-4 w-4 sm:h-5 sm:w-5 text-accent" /> Properties
               </TabsTrigger>

@@ -21,9 +21,9 @@
     /* Card Foreground (Same as main foreground) */
     --card-foreground-light-h: var(--foreground-light-h); --card-foreground-light-s: var(--foreground-light-s); --card-foreground-light-l: var(--foreground-light-l);
 
-    /* Popover (Distinct from background and card) */
-    --popover-light-h: 276; --popover-light-s: 30%; --popover-light-l: 97%; /* Made lighter and slightly more saturated */
-    /* Popover Foreground (Same as main foreground) */
+    /* Popover (Pure white for light mode) */
+    --popover-light-h: 0; --popover-light-s: 0%; --popover-light-l: 100%;
+    /* Popover Foreground (Same as main foreground for contrast on white) */
     --popover-foreground-light-h: var(--foreground-light-h); --popover-foreground-light-s: var(--foreground-light-s); --popover-foreground-light-l: var(--foreground-light-l);
     
     /* Secondary (Using Accent - Soft Blue #72899B -> HSL approx: 210, 15%, 53%) */
