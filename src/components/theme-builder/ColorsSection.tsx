@@ -11,13 +11,17 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
 import { CORE_COLOR_ROLES, EXTENDED_COLOR_ROLES, UI_COLOR_INPUT_ORDER, DEFAULT_COLORS } from '@/lib/consts';
-import { Gem, Palette, PlusCircle, Trash2 } from 'lucide-react';
+import { Gem, Palette, PlusCircle, Trash2, ArrowRight } from 'lucide-react'; // Added ArrowRight
 import { useToast } from "@/hooks/use-toast";
 
 
 type MaterialColorRole = keyof Omit<MaterialColors, 'seedColor'>;
 
-const ColorsSection: React.FC = () => {
+interface ColorsSectionProps {
+  setActiveTab: (tab: string) => void;
+}
+
+const ColorsSection: React.FC<ColorsSectionProps> = ({ setActiveTab }) => {
   const {
     themeConfig,
     updateColor,
@@ -211,8 +215,13 @@ const ColorsSection: React.FC = () => {
                 </div>
             </AccordionContent>
         </AccordionItem>
-
       </Accordion>
+
+      <div className="mt-8 flex justify-end">
+        <Button onClick={() => setActiveTab("fonts")}>
+          Next: Fonts <ArrowRight className="ml-2 h-4 w-4" />
+        </Button>
+      </div>
     </>
   );
 };

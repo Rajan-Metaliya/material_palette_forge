@@ -1,5 +1,4 @@
 
-
 "use client";
 
 import React from 'react';
@@ -12,7 +11,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
 import { COMMON_WEB_FONTS, FONT_WEIGHT_OPTIONS, MATERIAL_TEXT_STYLE_ORDER, MATERIAL_TEXT_STYLE_LABELS, DEFAULT_MATERIAL_TEXT_STYLES } from '@/lib/consts';
-import { PlusCircle, Trash2 } from 'lucide-react';
+import { PlusCircle, Trash2, ArrowRight } from 'lucide-react'; // Added ArrowRight
 import { useToast } from "@/hooks/use-toast";
 import ColorInput from './ColorInput';
 
@@ -29,7 +28,7 @@ const getCssFontWeight = (fontWeight: FontWeightValue): string | number => {
 
 
 interface TextStyleEditorProps {
-  styleKey: MaterialTextStyleKey | string; // Can be M3 key or custom name for custom styles
+  styleKey: MaterialTextStyleKey | string; 
   styleProps: TextStyleProperties;
   onPropertyChange: (
     propertyName: keyof TextStyleProperties, 
@@ -38,7 +37,7 @@ interface TextStyleEditorProps {
   ) => void;
   onNameChange?: (newName: string) => void;
   isCustomStyle?: boolean;
-  styleDisplayName?: string; // For M3 styles
+  styleDisplayName?: string;
 }
 
 const TextStyleEditor: React.FC<TextStyleEditorProps> = ({
@@ -81,7 +80,6 @@ const TextStyleEditor: React.FC<TextStyleEditorProps> = ({
     onPropertyChange('color', newColorValue, mode);
   };
 
-  // Determine the color for the preview
   const previewTextColor = styleProps.color?.[activeMode] || (themeConfig.colors.onSurface as ColorModeValues)[activeMode];
 
   const previewStyle: React.CSSProperties = {
@@ -219,8 +217,11 @@ const TextStyleEditor: React.FC<TextStyleEditorProps> = ({
   );
 };
 
+interface FontsSectionProps {
+  setActiveTab: (tab: string) => void;
+}
 
-const FontsSection: React.FC = () => {
+const FontsSection: React.FC<FontsSectionProps> = ({ setActiveTab }) => {
   const {
     themeConfig,
     updateMaterialTextStyle,
@@ -231,63 +232,70 @@ const FontsSection: React.FC = () => {
   } = useTheme();
 
   return (
-    <Accordion type="multiple" defaultValue={['material-styles']} className="w-full space-y-6">
-      <AccordionItem value="material-styles">
-        <AccordionTrigger className="text-xl font-semibold">
-          Material Text Styles
-        </AccordionTrigger>
-        <AccordionContent className="pt-4">
-          <CardDescription className="mb-4">
-            Configure the standard Material Design text styles. These will directly map to the TextTheme in Flutter.
-            Define specific colors for light and dark modes, or they will inherit from general theme colors.
-          </CardDescription>
-          {MATERIAL_TEXT_STYLE_ORDER.map(styleKey => (
-            <TextStyleEditor
-              key={styleKey}
-              styleKey={styleKey}
-              styleDisplayName={MATERIAL_TEXT_STYLE_LABELS[styleKey]}
-              styleProps={themeConfig.fonts.materialTextStyles[styleKey]}
-              onPropertyChange={(propName, value, colorMode) => updateMaterialTextStyle(styleKey, propName, value, colorMode)}
-              isCustomStyle={false}
-            />
-          ))}
-        </AccordionContent>
-      </AccordionItem>
-
-      <AccordionItem value="custom-styles">
-        <AccordionTrigger className="text-xl font-semibold">
-          Custom Text Styles
-        </AccordionTrigger>
-        <AccordionContent className="pt-4">
-           <CardDescription className="mb-4">
-            Define additional text styles for your application. These will be available via a ThemeExtension in Flutter.
-          </CardDescription>
-          {themeConfig.fonts.customTextStyles.map((customStyle, index) => (
-            <div key={index} className="relative">
+    <>
+      <Accordion type="multiple" defaultValue={['material-styles']} className="w-full space-y-6">
+        <AccordionItem value="material-styles">
+          <AccordionTrigger className="text-xl font-semibold">
+            Material Text Styles
+          </AccordionTrigger>
+          <AccordionContent className="pt-4">
+            <CardDescription className="mb-4">
+              Configure the standard Material Design text styles. These will directly map to the TextTheme in Flutter.
+              Define specific colors for light and dark modes, or they will inherit from general theme colors.
+            </CardDescription>
+            {MATERIAL_TEXT_STYLE_ORDER.map(styleKey => (
               <TextStyleEditor
-                styleKey={customStyle.name} 
-                styleProps={customStyle.style}
-                onPropertyChange={(propName, value, colorMode) => updateCustomTextStyleProperty(index, propName, value, colorMode)}
-                onNameChange={(newName) => updateCustomTextStyleName(index, newName)}
-                isCustomStyle={true}
+                key={styleKey}
+                styleKey={styleKey}
+                styleDisplayName={MATERIAL_TEXT_STYLE_LABELS[styleKey]}
+                styleProps={themeConfig.fonts.materialTextStyles[styleKey]}
+                onPropertyChange={(propName, value, colorMode) => updateMaterialTextStyle(styleKey, propName, value, colorMode)}
+                isCustomStyle={false}
               />
-              <Button
-                variant="ghost"
-                size="icon"
-                className="absolute top-2 right-2 text-destructive hover:text-destructive-foreground hover:bg-destructive/90"
-                onClick={() => removeCustomTextStyle(index)}
-                aria-label={`Remove ${customStyle.name}`}
-              >
-                <Trash2 className="h-4 w-4" />
-              </Button>
-            </div>
-          ))}
-          <Button onClick={() => addCustomTextStyle()} variant="outline" className="mt-4">
-            <PlusCircle className="mr-2 h-4 w-4" /> Add Custom Text Style
-          </Button>
-        </AccordionContent>
-      </AccordionItem>
-    </Accordion>
+            ))}
+          </AccordionContent>
+        </AccordionItem>
+
+        <AccordionItem value="custom-styles">
+          <AccordionTrigger className="text-xl font-semibold">
+            Custom Text Styles
+          </AccordionTrigger>
+          <AccordionContent className="pt-4">
+            <CardDescription className="mb-4">
+              Define additional text styles for your application. These will be available via a ThemeExtension in Flutter.
+            </CardDescription>
+            {themeConfig.fonts.customTextStyles.map((customStyle, index) => (
+              <div key={index} className="relative">
+                <TextStyleEditor
+                  styleKey={customStyle.name} 
+                  styleProps={customStyle.style}
+                  onPropertyChange={(propName, value, colorMode) => updateCustomTextStyleProperty(index, propName, value, colorMode)}
+                  onNameChange={(newName) => updateCustomTextStyleName(index, newName)}
+                  isCustomStyle={true}
+                />
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="absolute top-2 right-2 text-destructive hover:text-destructive-foreground hover:bg-destructive/90"
+                  onClick={() => removeCustomTextStyle(index)}
+                  aria-label={`Remove ${customStyle.name}`}
+                >
+                  <Trash2 className="h-4 w-4" />
+                </Button>
+              </div>
+            ))}
+            <Button onClick={() => addCustomTextStyle()} variant="outline" className="mt-4">
+              <PlusCircle className="mr-2 h-4 w-4" /> Add Custom Text Style
+            </Button>
+          </AccordionContent>
+        </AccordionItem>
+      </Accordion>
+      <div className="mt-8 flex justify-end">
+        <Button onClick={() => setActiveTab("properties")}>
+          Next: Properties <ArrowRight className="ml-2 h-4 w-4" />
+        </Button>
+      </div>
+    </>
   );
 };
 
